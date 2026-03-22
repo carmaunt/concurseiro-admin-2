@@ -1,7 +1,7 @@
 // src/app/(dashboard)/questoes/page.tsx
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import {
@@ -69,6 +69,20 @@ type ApiResponse<T> = {
   path: string;
 };
 
+function getRoleFromToken(token: string | null): string | null {
+  if (!token) return null;
+
+  try {
+    const payloadBase64 = token.split('.')[1];
+    const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
+    const payload = JSON.parse(payloadJson);
+
+    return payload.role ?? payload.authorities?.[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export default function QuestoesPage() {
   const queryClient = useQueryClient();
 
@@ -79,6 +93,13 @@ export default function QuestoesPage() {
 
   const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null);
   const [respondeu, setRespondeu] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const role = getRoleFromToken(token);
+    setUserRole(role);
+  }, []);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['questoes', page, size],
@@ -123,6 +144,7 @@ export default function QuestoesPage() {
   const pageAtual = data?.page?.number ?? page;
   const sizeAtual = data?.page?.size ?? size;
   const router = useRouter();
+  const isAdmin = userRole === 'ADMIN';
 
   const handleExcluir = (idQuestion: string) => {
     const confirmou = window.confirm(
@@ -252,14 +274,16 @@ export default function QuestoesPage() {
                           </IconButton>
                         </Tooltip>
 
-                        <Tooltip title="Excluir questão">
-                          <IconButton
-                            color="error"
-                            onClick={() => handleExcluir(q.idQuestion)}
-                            disabled={excluirQuestao.isPending}
-                          >
-                            <DeleteOutlineIcon />
-                          </IconButton>
+                        <Tooltip title={isAdmin ? 'Excluir questão' : 'Apenas administradores podem excluir questões'}>
+                          <span>
+                            <IconButton
+                              color="error"
+                              onClick={() => handleExcluir(q.idQuestion)}
+                              disabled={!isAdmin || excluirQuestao.isPending}
+                            >
+                              <DeleteOutlineIcon />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </Stack>
                     </TableCell>
