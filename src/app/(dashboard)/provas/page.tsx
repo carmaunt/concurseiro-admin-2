@@ -25,6 +25,7 @@ import {
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
 import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
@@ -384,6 +385,15 @@ export default function ProvasPage() {
                         <Tooltip title="Ver prova completa">
                           <IconButton color="primary" onClick={() => setProvaSelecionada(prova)}>
                             <VisibilityOutlinedIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Adicionar questão nesta prova">
+                          <IconButton
+                            color="success"
+                            onClick={() => router.push(`/provas/${prova.id}/questoes/nova`)}
+                          >
+                            <AddCircleOutlineIcon />
                           </IconButton>
                         </Tooltip>
 
