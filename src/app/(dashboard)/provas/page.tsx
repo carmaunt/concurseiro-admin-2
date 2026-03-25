@@ -55,6 +55,38 @@ type ProvasPageData = {
   };
 };
 
+type QuestaoListItem = {
+  idQuestion: string;
+  enunciado: string;
+  questao: string;
+  alternativas: string | null;
+  disciplina: string;
+  disciplinaId: number;
+  assunto: string;
+  assuntoId: number;
+  banca: string;
+  bancaId: number;
+  instituicao: string;
+  instituicaoId: number;
+  ano: number;
+  cargo: string;
+  nivel: string;
+  modalidade: string;
+  gabarito: string;
+  provaId: number | null;
+  criadoEm: string;
+};
+
+type QuestoesPageData = {
+  content: QuestaoListItem[];
+  page?: {
+    size: number;
+    number: number;
+    totalElements: number;
+    totalPages: number;
+  };
+};
+
 type ApiResponse<T> = {
   success: boolean;
   data: T;
@@ -90,6 +122,12 @@ export default function ProvasPage() {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [provaSelecionada, setProvaSelecionada] = useState<ProvaListItem | null>(null);
+  const [questoesDaProva, setQuestoesDaProva] = useState<QuestaoListItem[]>([]);
+  const [loadingQuestoes, setLoadingQuestoes] = useState(false);
+  const [erroQuestoes, setErroQuestoes] = useState('');
+  const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null);
+  const [respondeu, setRespondeu] = useState(false);
+  const [questaoEmResolucao, setQuestaoEmResolucao] = useState<string | null>(null);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['provas', page, size],
@@ -162,6 +200,51 @@ export default function ProvasPage() {
   const pageAtual = data?.page?.number ?? page;
   const sizeAtual = data?.page?.size ?? size;
   const isAdmin = userRole === 'ADMIN';
+
+  const handleVisualizarProva = async (prova: ProvaListItem) => {
+    setProvaSelecionada(prova);
+    setErroQuestoes('');
+    setLoadingQuestoes(true);
+    setQuestoesDaProva([]);
+    setRespostaSelecionada(null);
+    setRespondeu(false);
+    setQuestaoEmResolucao(null);
+
+    try {
+      const res = await api.get<ApiResponse<QuestoesPageData> | QuestoesPageData | QuestaoListItem[]>(
+        '/api/v1/questoes',
+        {
+          params: {
+            page: 0,
+            size: 50,
+            sort: 'criadoEm,desc',
+          },
+        }
+      );
+
+      let lista: QuestaoListItem[] = [];
+
+      if (Array.isArray(res.data)) {
+        lista = res.data;
+      } else if (Array.isArray((res.data as any)?.content)) {
+        lista = (res.data as QuestoesPageData).content;
+      } else if (Array.isArray((res.data as any)?.data?.content)) {
+        lista = (res.data as any).data.content;
+      } else if (Array.isArray((res.data as any)?.data)) {
+        lista = (res.data as any).data;
+      }
+
+      setQuestoesDaProva(lista.filter((q) => q.provaId === prova.id));
+    } catch (error: any) {
+      setErroQuestoes(
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        'Não foi possível carregar as questões da prova.'
+      );
+    } finally {
+      setLoadingQuestoes(false);
+    }
+  };
 
   const handleExcluir = (id: number) => {
     const confirmou = window.confirm(
@@ -383,7 +466,7 @@ export default function ProvasPage() {
                     <TableCell align="right">
                       <Stack direction="row" spacing={1} justifyContent="flex-end">
                         <Tooltip title="Ver prova completa">
-                          <IconButton color="primary" onClick={() => setProvaSelecionada(prova)}>
+                          <IconButton color="primary" onClick={() => handleVisualizarProva(prova)}>
                             <VisibilityOutlinedIcon />
                           </IconButton>
                         </Tooltip>
@@ -527,27 +610,242 @@ export default function ProvasPage() {
                       )}
                     </Stack>
 
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 2.5,
-                        borderRadius: 3,
-                        border: '1px solid #e5e7eb',
-                        backgroundColor: '#fcfcfd',
-                      }}
-                    >
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          fontSize: '1rem',
-                          fontWeight: 600,
-                          color: '#374151',
-                          lineHeight: 1.7,
-                        }}
-                      >
-                        {provaSelecionada.descricao || 'Sem descrição cadastrada para esta prova.'}
+                    <Box>
+                      <Typography variant="h6" fontWeight={800} sx={{ color: '#334155', mb: 2 }}>
+                        Questões cadastradas
                       </Typography>
-                    </Paper>
+
+                      {loadingQuestoes && (
+                        <Box display="flex" justifyContent="center" py={4}>
+                          <CircularProgress />
+                        </Box>
+                      )}
+
+                      {!loadingQuestoes && erroQuestoes && (
+                        <Alert severity="error" sx={{ borderRadius: 2 }}>
+                          {erroQuestoes}
+                        </Alert>
+                      )}
+
+                      {!loadingQuestoes && !erroQuestoes && questoesDaProva.length === 0 && (
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 2.5,
+                            borderRadius: 3,
+                            border: '1px solid #e5e7eb',
+                            backgroundColor: '#fcfcfd',
+                          }}
+                        >
+                          <Typography sx={{ color: '#64748b', fontWeight: 600 }}>
+                            Nenhuma questão cadastrada para esta prova.
+                          </Typography>
+                        </Paper>
+                      )}
+
+                      {!loadingQuestoes && !erroQuestoes && questoesDaProva.length > 0 && (
+                        <Stack spacing={2}>
+                          {questoesDaProva.map((questao) => (
+                            <Paper
+                              key={questao.idQuestion}
+                              elevation={0}
+                              sx={{
+                                p: 2.5,
+                                borderRadius: 3,
+                                border: '1px solid #e5e7eb',
+                                backgroundColor: '#fcfcfd',
+                              }}
+                            >
+                              <Stack spacing={1.25}>
+                                <Stack spacing={0.5} alignItems="flex-start">
+                                  <Stack direction="row" spacing={3} flexWrap="wrap">
+                                    <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                      <strong>Disciplina:</strong> {questao.disciplina}
+                                    </Typography>
+
+                                    <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                      <strong>Assunto:</strong> {questao.assunto}
+                                    </Typography>
+                                  </Stack>
+
+                                  {('subassunto' in questao) && (questao as any).subassunto && (
+                                    <Typography variant="body2" sx={{ color: '#64748b' }}>
+                                      <strong>Subassunto:</strong> {(questao as any).subassunto}
+                                    </Typography>
+                                  )}
+                                </Stack>
+
+                                <Typography sx={{ color: '#374151' }}>
+                                  {questao.enunciado}
+                                </Typography>
+
+                                
+                                <Typography sx={{ color: '#374151' }}>
+                                  {questao.questao}
+                                </Typography>
+
+                                <Stack spacing={1.5}>
+                                  {(questao.alternativas || 'C) CERTO\nE) ERRADO')
+                                    .split('\n')
+                                    .filter((item) => item.trim())
+                                    .map((alternativa, index) => {
+                                      const letra = alternativa.trim().charAt(0).replace(')', '');
+                                      const isSelecionada =
+                                        questaoEmResolucao === questao.idQuestion && respostaSelecionada === letra;
+
+                                      const gabaritoNormalizado =
+                                        String(questao.gabarito).toUpperCase() === 'ERRADO'
+                                          ? 'E'
+                                          : String(questao.gabarito).toUpperCase() === 'CERTO'
+                                          ? 'C'
+                                          : String(questao.gabarito).toUpperCase();
+
+                                      const isCorreta = letra.toUpperCase() === gabaritoNormalizado;
+
+                                      const respondeuQuestao =
+                                        questaoEmResolucao === questao.idQuestion && respondeu;
+
+                                      return (
+                                        <Box
+                                          key={`${letra}-${index}`}
+                                          onClick={() => {
+                                            if (respondeuQuestao) return;
+                                            setQuestaoEmResolucao(questao.idQuestion);
+                                            setRespostaSelecionada(letra);
+                                          }}
+                                          sx={{
+                                            p: 2,
+                                            borderRadius: 3,
+                                            border: respondeuQuestao
+                                              ? isCorreta
+                                                ? '2px solid #16a34a'
+                                                : isSelecionada
+                                                ? '2px solid #dc2626'
+                                                : '1px solid #e5e7eb'
+                                              : isSelecionada
+                                              ? '2px solid #2563eb'
+                                              : '1px solid #e5e7eb',
+                                            backgroundColor: respondeuQuestao
+                                              ? isCorreta
+                                                ? '#dcfce7'
+                                                : isSelecionada
+                                                ? '#fee2e2'
+                                                : '#fff'
+                                              : isSelecionada
+                                              ? '#eff6ff'
+                                              : '#fff',
+                                            display: 'flex',
+                                            alignItems: 'flex-start',
+                                            gap: 1.5,
+                                            cursor: respondeuQuestao ? 'default' : 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            '&:hover': respondeuQuestao
+                                              ? {}
+                                              : {
+                                                  borderColor: '#2563eb',
+                                                  backgroundColor: '#f1f5f9',
+                                                },
+                                          }}
+                                        >
+                                          <Box
+                                            sx={{
+                                              width: 22,
+                                              height: 22,
+                                              minWidth: 22,
+                                              borderRadius: '50%',
+                                              border: respondeuQuestao
+                                                ? isCorreta
+                                                  ? '2px solid #16a34a'
+                                                  : isSelecionada
+                                                  ? '2px solid #dc2626'
+                                                  : '2px solid #cbd5e1'
+                                                : isSelecionada
+                                                ? '2px solid #2563eb'
+                                                : '2px solid #cbd5e1',
+                                              mt: '2px',
+                                              position: 'relative',
+                                              '&::after':
+                                                (respondeuQuestao && (isCorreta || isSelecionada)) ||
+                                                (!respondeuQuestao && isSelecionada)
+                                                  ? {
+                                                      content: '""',
+                                                      position: 'absolute',
+                                                      inset: 4,
+                                                      borderRadius: '50%',
+                                                      backgroundColor: respondeuQuestao
+                                                        ? isCorreta
+                                                          ? '#16a34a'
+                                                          : '#dc2626'
+                                                        : '#2563eb',
+                                                    }
+                                                  : undefined,
+                                            }}
+                                          />
+
+                                          <Box sx={{ flex: 1 }}>
+                                            <Typography
+                                              variant="body1"
+                                              sx={{
+                                                fontWeight: isCorreta ? 700 : 600,
+                                                color: '#374151',
+                                                lineHeight: 1.7,
+                                                whiteSpace: 'pre-line',
+                                              }}
+                                            >
+                                              {alternativa}
+                                            </Typography>
+                                          </Box>
+                                        </Box>
+                                      );
+                                    })}
+                                </Stack>
+
+                                <Stack
+                                  direction={{ xs: 'column', sm: 'row' }}
+                                  spacing={1.5}
+                                  alignItems={{ xs: 'flex-start', sm: 'center' }}
+                                  pt={1}
+                                >
+                                  <Button
+                                    variant="contained"
+                                    disableElevation
+                                    onClick={() => {
+                                      if (questaoEmResolucao !== questao.idQuestion || !respostaSelecionada) return;
+                                      setRespondeu(true);
+                                    }}
+                                    sx={{
+                                      textTransform: 'none',
+                                      fontWeight: 700,
+                                      borderRadius: 2,
+                                      px: 2.5,
+                                      backgroundColor: '#2563eb',
+                                    }}
+                                  >
+                                    Responder
+                                  </Button>
+
+                                  <Button
+                                    variant="text"
+                                    onClick={() => {
+                                      setQuestaoEmResolucao(questao.idQuestion);
+                                      setRespostaSelecionada(null);
+                                      setRespondeu(false);
+                                    }}
+                                    sx={{
+                                      textTransform: 'none',
+                                      fontWeight: 700,
+                                      color: '#64748b',
+                                    }}
+                                  >
+                                    Limpar
+                                  </Button>
+                                </Stack>
+                              </Stack>
+                            </Paper>
+                          ))}
+                        </Stack>
+                      )}
+                    </Box>
                   </Stack>
                 </Box>
               </Paper>
