@@ -710,7 +710,14 @@ export default function ProvasPage() {
                                           key={`${letra}-${index}`}
                                           onClick={() => {
                                             if (respondeuQuestao) return;
-                                            setQuestaoEmResolucao(questao.idQuestion);
+
+                                            if (questaoEmResolucao !== questao.idQuestion) {
+                                              setQuestaoEmResolucao(questao.idQuestion);
+                                              setRespostaSelecionada(letra);
+                                              setRespondeu(false);
+                                              return;
+                                            }
+
                                             setRespostaSelecionada(letra);
                                           }}
                                           sx={{
@@ -810,7 +817,8 @@ export default function ProvasPage() {
                                     variant="contained"
                                     disableElevation
                                     onClick={() => {
-                                      if (questaoEmResolucao !== questao.idQuestion || !respostaSelecionada) return;
+                                      if (questaoEmResolucao !== questao.idQuestion) return;
+                                      if (!respostaSelecionada) return;
                                       setRespondeu(true);
                                     }}
                                     sx={{

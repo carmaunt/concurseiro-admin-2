@@ -101,6 +101,7 @@ export default function NovaQuestaoDaProvaPage() {
     register,
     handleSubmit,
     watch,
+    reset,
     resetField,
     setValue,
     formState: { isSubmitting, errors },
@@ -231,9 +232,22 @@ export default function NovaQuestaoDaProvaPage() {
 
       setSucesso('Questão cadastrada com sucesso nesta prova.');
 
-      setTimeout(() => {
-        router.push(`/provas/${provaId}`);
-      }, 1200);
+      reset({
+        enunciado: '',
+        questao: '',
+        alternativas: '',
+        disciplinaId: '',
+        assuntoId: '',
+        subassunto: '',
+        gabarito: '',
+        alternativa_A: '',
+        alternativa_B: '',
+        alternativa_C: '',
+        alternativa_D: '',
+        alternativa_E: '',
+      });
+
+      setAssuntos([]);
     } catch (error: any) {
       console.log('erro cadastro questão:', error?.response?.data);
       const status = error?.response?.status;
