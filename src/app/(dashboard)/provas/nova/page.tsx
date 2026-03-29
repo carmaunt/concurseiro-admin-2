@@ -27,7 +27,21 @@ type FormData = {
   cargo: string;
   nivel: string;
   modalidade: string;
+  novaBanca: string;
+  novaInstituicao: string;
 };
+
+const NOVO_VALOR = '__new__';
+
+function normalizarLista(data: any): CatalogoItem[] {
+  const arr = Array.isArray(data) ? data : data?.data ?? [];
+  return arr
+    .map((x: any) => ({
+      id: x.id ?? x.idBanca ?? x.idInstituicao,
+      nome: x.nome ?? x.name,
+    }))
+    .filter((x: CatalogoItem) => x.id != null && x.nome);
+}
 
 export default function NovaProvaPage() {
   const router = useRouter();
@@ -39,6 +53,8 @@ export default function NovaProvaPage() {
     cargo: '',
     nivel: '',
     modalidade: '',
+    novaBanca: '',
+    novaInstituicao: '',
   });
 
   const [bancas, setBancas] = useState<CatalogoItem[]>([]);
@@ -46,6 +62,10 @@ export default function NovaProvaPage() {
   const [carregandoCatalogos, setCarregandoCatalogos] = useState(true);
   const [erro, setErro] = useState('');
   const [salvando, setSalvando] = useState(false);
+
+  const [bancaSel, setBancaSel] = useState('');
+  const [instituicaoSel, setInstituicaoSel] = useState('');
+  const [savingInline, setSavingInline] = useState<null | 'banca' | 'instituicao'>(null);
 
   const handleChange =
     (field: keyof FormData) =>
@@ -63,11 +83,8 @@ export default function NovaProvaPage() {
           api.get('/api/v1/catalogo/instituicoes'),
         ]);
 
-        const bancasData = bancasRes.data as CatalogoItem[] | { data: CatalogoItem[] };
-        const instituicoesData = instituicoesRes.data as CatalogoItem[] | { data: CatalogoItem[] };
-
-        setBancas(Array.isArray(bancasData) ? bancasData : bancasData.data);
-        setInstituicoes(Array.isArray(instituicoesData) ? instituicoesData : instituicoesData.data);
+        setBancas(normalizarLista(bancasRes.data));
+        setInstituicoes(normalizarLista(instituicoesRes.data));
       } catch {
         setErro('Não foi possível carregar bancas e instituições do catálogo.');
       } finally {
@@ -78,17 +95,88 @@ export default function NovaProvaPage() {
     carregarCatalogos();
   }, []);
 
+  async function criarItemCatalogo(tipo: 'banca' | 'instituicao', nome: string) {
+    const nomeLimpo = nome.trim();
+    if (!nomeLimpo) throw new Error('Digite um nome válido.');
+
+    const path =
+      tipo === 'banca'
+        ? '/api/v1/admin/catalogo/bancas'
+        : '/api/v1/admin/catalogo/instituicoes';
+
+    const res = await api.post(path, { nome: nomeLimpo });
+    const created = res.data?.data ?? res.data;
+
+    const id = created?.id ?? created?.idBanca ?? created?.idInstituicao;
+    const nomeResp = created?.nome ?? nomeLimpo;
+
+    if (id == null) {
+      throw new Error('O backend não retornou o id do item criado.');
+    }
+
+    return { id, nome: nomeResp } as CatalogoItem;
+  }
+
+  const handleInlineCreate = async (tipo: 'banca' | 'instituicao') => {
+    try {
+      setErro('');
+      setSavingInline(tipo);
+
+      if (tipo === 'banca') {
+        const created = await criarItemCatalogo('banca', form.novaBanca);
+        setBancas((prev) => [...prev, created]);
+        setBancaSel(String(created.id));
+        setForm((prev) => ({
+          ...prev,
+          banca: created.nome,
+          novaBanca: '',
+        }));
+        return;
+      }
+
+      const created = await criarItemCatalogo('instituicao', form.novaInstituicao);
+      setInstituicoes((prev) => [...prev, created]);
+      setInstituicaoSel(String(created.id));
+      setForm((prev) => ({
+        ...prev,
+        instituicaoId: String(created.id),
+        novaInstituicao: '',
+      }));
+    } catch (error: any) {
+      setErro(
+        error?.response?.data?.message ||
+          error?.response?.data?.detail ||
+          error?.message ||
+          'Erro ao criar item do catálogo.'
+      );
+    } finally {
+      setSavingInline(null);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErro('');
     setSalvando(true);
+
+    if (!form.instituicaoId) {
+      setErro('Selecione ou crie uma instituição.');
+      setSalvando(false);
+      return;
+    }
+
+    if (!form.banca) {
+      setErro('Selecione ou crie uma banca.');
+      setSalvando(false);
+      return;
+    }
 
     try {
       await api.post('/api/v1/provas', {
         banca: form.banca,
         instituicaoId: Number(form.instituicaoId),
         ano: Number(form.ano),
-        cargo: form.cargo,
+        cargo: form.cargo.trim(),
         nivel: form.nivel,
         modalidade: form.modalidade,
       });
@@ -111,6 +199,11 @@ export default function NovaProvaPage() {
 
       if (status === 400) {
         setErro(detail || message || 'Dados inválidos para cadastro da prova.');
+        return;
+      }
+
+      if (status === 403) {
+        setErro('Seu usuário não tem permissão para adicionar itens ao catálogo.');
         return;
       }
 
@@ -153,8 +246,22 @@ export default function NovaProvaPage() {
         >
           <TextField
             label="Instituição"
-            value={form.instituicaoId}
-            onChange={handleChange('instituicaoId')}
+            value={instituicaoSel}
+            onChange={(e) => {
+              const value = e.target.value;
+              setInstituicaoSel(value);
+
+              if (value === NOVO_VALOR) {
+                setForm((prev) => ({ ...prev, instituicaoId: '' }));
+                return;
+              }
+
+              const selected = instituicoes.find((item) => String(item.id) === value);
+              setForm((prev) => ({
+                ...prev,
+                instituicaoId: selected ? String(selected.id) : '',
+              }));
+            }}
             required
             fullWidth
             select
@@ -165,23 +272,77 @@ export default function NovaProvaPage() {
                 {instituicao.nome}
               </MenuItem>
             ))}
+            <MenuItem value={NOVO_VALOR}>➕ Adicionar novo...</MenuItem>
           </TextField>
+
+          {instituicaoSel === NOVO_VALOR && (
+            <Stack direction="row" spacing={1.5}>
+              <TextField
+                fullWidth
+                label="Nova instituição"
+                value={form.novaInstituicao}
+                onChange={handleChange('novaInstituicao')}
+              />
+              <Button
+                variant="contained"
+                onClick={() => handleInlineCreate('instituicao')}
+                disabled={savingInline === 'instituicao'}
+                sx={{ minWidth: 90 }}
+              >
+                +
+              </Button>
+            </Stack>
+          )}
 
           <TextField
             label="Banca"
-            value={form.banca}
-            onChange={handleChange('banca')}
+            value={bancaSel}
+            onChange={(e) => {
+              const value = e.target.value;
+              setBancaSel(value);
+
+              if (value === NOVO_VALOR) {
+                setForm((prev) => ({ ...prev, banca: '' }));
+                return;
+              }
+
+              const selected = bancas.find((item) => String(item.id) === value);
+              setForm((prev) => ({
+                ...prev,
+                banca: selected?.nome ?? '',
+              }));
+            }}
             required
             fullWidth
             select
           >
             <MenuItem value="">Selecione</MenuItem>
             {bancas.map((banca) => (
-              <MenuItem key={banca.id} value={banca.nome}>
+              <MenuItem key={banca.id} value={String(banca.id)}>
                 {banca.nome}
               </MenuItem>
             ))}
+            <MenuItem value={NOVO_VALOR}>➕ Adicionar novo...</MenuItem>
           </TextField>
+
+          {bancaSel === NOVO_VALOR && (
+            <Stack direction="row" spacing={1.5}>
+              <TextField
+                fullWidth
+                label="Nova banca"
+                value={form.novaBanca}
+                onChange={handleChange('novaBanca')}
+              />
+              <Button
+                variant="contained"
+                onClick={() => handleInlineCreate('banca')}
+                disabled={savingInline === 'banca'}
+                sx={{ minWidth: 90 }}
+              >
+                +
+              </Button>
+            </Stack>
+          )}
 
           <TextField
             label="Cargo"
