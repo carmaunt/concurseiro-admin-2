@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'http://localhost:8080', // ajuste se sua API estiver em outra porta
+  baseURL: 'https://concurseiro-api-lnae.onrender.com',
 });
 
 // interceptor para enviar o token automaticamente
