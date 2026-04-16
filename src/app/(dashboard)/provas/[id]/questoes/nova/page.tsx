@@ -329,16 +329,20 @@ export default function NovaQuestaoDaProvaPage() {
       }
 
       if (tipo === 'assunto') {
-        const nome = assuntoNew.trim();
-        if (!nome) throw new Error('Digite o assunto para confirmar.');
+        const created = await criarItemCatalogo(
+          'assunto',
+          assuntoNew,
+          Number(disciplinaId),
+          null
+        );
 
-        const confirmedValue = `${CONFIRMED_PREFIX}${nome}`;
-        setAssuntoSel(confirmedValue);
+        setAssuntos((prev) => [...prev, created]);
+        setAssuntoSel(String(created.id));
         setAssuntoNew('');
         setSubassuntos([]);
         setSubassuntoSel('');
 
-        setValue('assuntoId', '');
+        setValue('assuntoId', String(created.id));
         setValue('subassunto', '');
 
         return;
