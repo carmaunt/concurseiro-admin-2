@@ -1,7 +1,7 @@
 // src/app/provas/[id]/questoes/nova/page.tsx
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -13,12 +13,16 @@ import {
   CardContent,
   CircularProgress,
   Container,
+  IconButton,
   MenuItem,
+  Paper,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
 import { api } from '@/services/api';
+import FormatBoldIcon from '@mui/icons-material/FormatBold';
+import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 
 type ProvaResponse = {
   id: number;
@@ -159,6 +163,38 @@ export default function NovaQuestaoDaProvaPage() {
       .includes('CERTO_ERRADO');
 
   const gabaritoOptions = useMemo(() => getGabaritoOptions(modalidade), [modalidade]);
+
+  const [focusedField, setFocusedField] = useState<
+    | null
+    | 'enunciado'
+    | 'questao'
+    | 'alternativa_A'
+    | 'alternativa_B'
+    | 'alternativa_C'
+    | 'alternativa_D'
+    | 'alternativa_E'
+  >(null);
+
+  const inputRefs = useRef<
+    Record<
+      | 'enunciado'
+      | 'questao'
+      | 'alternativa_A'
+      | 'alternativa_B'
+      | 'alternativa_C'
+      | 'alternativa_D'
+      | 'alternativa_E',
+      HTMLInputElement | HTMLTextAreaElement | null
+    >
+  >({
+    enunciado: null,
+    questao: null,
+    alternativa_A: null,
+    alternativa_B: null,
+    alternativa_C: null,
+    alternativa_D: null,
+    alternativa_E: null,
+  });
 
   useEffect(() => {
     async function carregarDadosIniciais() {
@@ -393,6 +429,46 @@ export default function NovaQuestaoDaProvaPage() {
     }
   };
 
+  const applyMarkdownToSelection = (
+    field:
+      | 'enunciado'
+      | 'questao'
+      | 'alternativa_A'
+      | 'alternativa_B'
+      | 'alternativa_C'
+      | 'alternativa_D'
+      | 'alternativa_E',
+    marker: '**' | '*'
+  ) => {
+    const input = inputRefs.current[field];
+    if (!input) return;
+
+    const start = input.selectionStart ?? 0;
+    const end = input.selectionEnd ?? 0;
+    const currentValue = input.value ?? '';
+
+    if (start === end) return;
+
+    const selectedText = currentValue.slice(start, end);
+    const before = currentValue.slice(0, start);
+    const after = currentValue.slice(end);
+
+    const newValue = `${before}${marker}${selectedText}${marker}${after}`;
+
+    setValue(field, newValue, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
+
+    requestAnimationFrame(() => {
+      input.focus();
+      input.setSelectionRange(
+        start + marker.length,
+        end + marker.length
+      );
+    });
+  };
+
   const onSubmit = async (data: FormData) => {
     setErro('');
     setSucesso('');
@@ -529,29 +605,111 @@ export default function NovaQuestaoDaProvaPage() {
 
                 <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 4 }}>
                   <Stack spacing={2.5}>
-                    <TextField
-                      label="Enunciado"
-                      fullWidth
-                      multiline
-                      minRows={4}
-                      error={!!errors.enunciado}
-                      helperText={errors.enunciado?.message}
-                      {...register('enunciado', {
-                        required: 'Informe o enunciado.',
-                      })}
-                    />
+                    <Box>
+                      {focusedField === 'enunciado' && (
+                        <Paper
+                          elevation={1}
+                          sx={{
+                            mb: 1,
+                            p: 0.5,
+                            display: 'flex',
+                            gap: 0.5,
+                            borderRadius: 2,
+                            width: 'fit-content',
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => applyMarkdownToSelection('enunciado', '**')}
+                          >
+                            <FormatBoldIcon fontSize="small" />
+                          </IconButton>
 
-                    <TextField
-                      label="Questão"
-                      fullWidth
-                      multiline
-                      minRows={4}
-                      error={!!errors.questao}
-                      helperText={errors.questao?.message}
-                      {...register('questao', {
-                        required: 'Informe o texto da questão.',
-                      })}
-                    />
+                          <IconButton
+                            size="small"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => applyMarkdownToSelection('enunciado', '*')}
+                          >
+                            <FormatItalicIcon fontSize="small" />
+                          </IconButton>
+                        </Paper>
+                      )}
+
+                      <TextField
+                        label="Enunciado"
+                        fullWidth
+                        multiline
+                        minRows={4}
+                        error={!!errors.enunciado}
+                        helperText={errors.enunciado?.message}
+                        {...register('enunciado')}
+                        inputRef={(el) => {
+                          register('enunciado').ref(el);
+                          inputRefs.current.enunciado = el;
+                        }}
+                        onFocus={() => setFocusedField('enunciado')}
+                        onBlur={() => {
+                          setTimeout(() => {
+                            setFocusedField((prev) => (prev === 'enunciado' ? null : prev));
+                          }, 150);
+                        }}
+                      />
+                    </Box>
+
+                    <Box>
+                      {focusedField === 'questao' && (
+                        <Paper
+                          elevation={1}
+                          sx={{
+                            mb: 1,
+                            p: 0.5,
+                            display: 'flex',
+                            gap: 0.5,
+                            borderRadius: 2,
+                            width: 'fit-content',
+                          }}
+                        >
+                          <IconButton
+                            size="small"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => applyMarkdownToSelection('questao', '**')}
+                          >
+                            <FormatBoldIcon fontSize="small" />
+                          </IconButton>
+
+                          <IconButton
+                            size="small"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => applyMarkdownToSelection('questao', '*')}
+                          >
+                            <FormatItalicIcon fontSize="small" />
+                          </IconButton>
+                        </Paper>
+                      )}
+
+                      <TextField
+                        label="Questão"
+                        fullWidth
+                        multiline
+                        minRows={4}
+                        error={!!errors.questao}
+                        helperText={errors.questao?.message}
+                        {...register('questao', {
+                          required: 'Informe o texto da questão.',
+                        })}
+                        inputRef={(el) => {
+                          register('questao').ref(el);
+                          inputRefs.current.questao = el;
+                        }}
+                        onFocus={() => setFocusedField('questao')}
+                        onBlur={() => {
+                          setTimeout(() => {
+                            setFocusedField((prev) => (prev === 'questao' ? null : prev));
+                          }, 150);
+                        }}
+                      />
+                    </Box>
 
                     {isCertoErrado && (
                       <Box
@@ -576,14 +734,66 @@ export default function NovaQuestaoDaProvaPage() {
                       <Stack spacing={1.5}>
                         <Typography fontWeight={600}>Alternativas</Typography>
 
-                        {['A', 'B', 'C', 'D', 'E'].map((letra) => (
-                          <TextField
-                            key={letra}
-                            label={`Alternativa ${letra}`}
-                            fullWidth
-                            {...register(`alternativa_${letra}` as keyof FormData)}
-                          />
-                        ))}
+                        {['A', 'B', 'C', 'D', 'E'].map((letra) => {
+                          const fieldName = `alternativa_${letra}` as
+                            | 'alternativa_A'
+                            | 'alternativa_B'
+                            | 'alternativa_C'
+                            | 'alternativa_D'
+                            | 'alternativa_E';
+
+                          return (
+                            <Box key={letra}>
+                              {focusedField === fieldName && (
+                                <Paper
+                                  elevation={1}
+                                  sx={{
+                                    mb: 1,
+                                    p: 0.5,
+                                    display: 'flex',
+                                    gap: 0.5,
+                                    borderRadius: 2,
+                                    width: 'fit-content',
+                                  }}
+                                >
+                                  <IconButton
+                                    size="small"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => applyMarkdownToSelection(fieldName, '**')}
+                                  >
+                                    <FormatBoldIcon fontSize="small" />
+                                  </IconButton>
+
+                                  <IconButton
+                                    size="small"
+                                    onMouseDown={(e) => e.preventDefault()}
+                                    onClick={() => applyMarkdownToSelection(fieldName, '*')}
+                                  >
+                                    <FormatItalicIcon fontSize="small" />
+                                  </IconButton>
+                                </Paper>
+                              )}
+
+                              <TextField
+                                label={`Alternativa ${letra}`}
+                                fullWidth
+                                {...register(fieldName)}
+                                inputRef={(el) => {
+                                  register(fieldName).ref(el);
+                                  inputRefs.current[fieldName] = el;
+                                }}
+                                onFocus={() => setFocusedField(fieldName)}
+                                onBlur={() => {
+                                  setTimeout(() => {
+                                    setFocusedField((prev) =>
+                                      prev === fieldName ? null : prev
+                                    );
+                                  }, 150);
+                                }}
+                              />
+                            </Box>
+                          );
+                        })}
                       </Stack>
                     )}
 

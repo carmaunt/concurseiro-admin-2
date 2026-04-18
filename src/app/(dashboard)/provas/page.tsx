@@ -108,6 +108,18 @@ function getRoleFromToken(token: string | null): string | null {
   }
 }
 
+function renderSimpleMarkdown(text: string | null | undefined): string {
+  if (!text) return '';
+
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br />');
+}
+
 export default function ProvasPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -675,14 +687,20 @@ export default function ProvasPage() {
                                   )}
                                 </Stack>
 
-                                <Typography sx={{ color: '#374151' }}>
-                                  {questao.enunciado}
-                                </Typography>
+                                <Typography
+                                  sx={{ color: '#374151' }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: renderSimpleMarkdown(questao.enunciado),
+                                  }}
+                                />
 
                                 
-                                <Typography sx={{ color: '#374151' }}>
-                                  {questao.questao}
-                                </Typography>
+                                <Typography
+                                  sx={{ color: '#374151' }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: renderSimpleMarkdown(questao.questao),
+                                  }}
+                                />
 
                                 <Stack spacing={1.5}>
                                   {(questao.alternativas || 'C) CERTO\nE) ERRADO')
@@ -793,14 +811,14 @@ export default function ProvasPage() {
                                             <Typography
                                               variant="body1"
                                               sx={{
-                                                fontWeight: isCorreta ? 700 : 600,
+                                                fontWeight: 400,
                                                 color: '#374151',
                                                 lineHeight: 1.7,
-                                                whiteSpace: 'pre-line',
                                               }}
-                                            >
-                                              {alternativa}
-                                            </Typography>
+                                              dangerouslySetInnerHTML={{
+                                                __html: renderSimpleMarkdown(alternativa),
+                                              }}
+                                            />
                                           </Box>
                                         </Box>
                                       );
