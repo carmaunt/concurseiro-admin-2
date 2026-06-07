@@ -89,6 +89,10 @@ function extrairLetraAlternativa(alternativa: string) {
   return alternativa.trim().charAt(0).replace(')', '').toUpperCase();
 }
 
+function isGabaritoAnulada(gabarito: string | null | undefined) {
+  return String(gabarito || '').toUpperCase() === 'ANULADA';
+}
+
 export default function QuestoesPage() {
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -317,11 +321,16 @@ export default function QuestoesPage() {
                       <Typography variant="body1" sx={{ fontSize: { xs: '1rem', md: '1.05rem' }, fontWeight: 600, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{questaoSelecionada.questao}</Typography>
                     </Paper>
 
+                    {isGabaritoAnulada(questaoSelecionada.gabarito) && (
+                      <Alert severity="warning" sx={{ borderRadius: 2 }}>Questão anulada.</Alert>
+                    )}
+
                     <Stack spacing={1.5}>
                       {questaoSelecionada.alternativas.split('\n').filter((item) => item.trim()).map((alternativa, index) => {
                         const letra = extrairLetraAlternativa(alternativa);
                         const isSelecionada = respostaSelecionada === letra;
-                        const isCorreta = letra === String(questaoSelecionada.gabarito).toUpperCase();
+                        const isAnulada = isGabaritoAnulada(questaoSelecionada.gabarito);
+                        const isCorreta = !isAnulada && letra === String(questaoSelecionada.gabarito).toUpperCase();
 
                         return (
                           <Box
@@ -330,8 +339,8 @@ export default function QuestoesPage() {
                             sx={{
                               p: 2,
                               borderRadius: 3,
-                              border: respondeu ? (isCorreta ? '2px solid #16a34a' : isSelecionada ? '2px solid #dc2626' : '1px solid #e5e7eb') : isSelecionada ? '2px solid #2563eb' : '1px solid #e5e7eb',
-                              backgroundColor: respondeu ? (isCorreta ? '#dcfce7' : isSelecionada ? '#fee2e2' : '#fff') : isSelecionada ? '#eff6ff' : '#fff',
+                              border: respondeu && !isAnulada ? (isCorreta ? '2px solid #16a34a' : isSelecionada ? '2px solid #dc2626' : '1px solid #e5e7eb') : isSelecionada ? '2px solid #2563eb' : '1px solid #e5e7eb',
+                              backgroundColor: respondeu && !isAnulada ? (isCorreta ? '#dcfce7' : isSelecionada ? '#fee2e2' : '#fff') : isSelecionada ? '#eff6ff' : '#fff',
                               display: 'flex',
                               alignItems: 'flex-start',
                               gap: 1.5,
@@ -339,7 +348,7 @@ export default function QuestoesPage() {
                               transition: 'all 0.2s ease',
                             }}
                           >
-                            <Box sx={{ width: 22, height: 22, minWidth: 22, borderRadius: '50%', border: respondeu ? (isCorreta ? '2px solid #16a34a' : isSelecionada ? '2px solid #dc2626' : '2px solid #cbd5e1') : isSelecionada ? '2px solid #2563eb' : '2px solid #cbd5e1', mt: '2px', position: 'relative', '&::after': (respondeu && (isCorreta || isSelecionada)) || (!respondeu && isSelecionada) ? { content: '""', position: 'absolute', inset: 4, borderRadius: '50%', backgroundColor: respondeu ? (isCorreta ? '#16a34a' : '#dc2626') : '#2563eb' } : undefined }} />
+                            <Box sx={{ width: 22, height: 22, minWidth: 22, borderRadius: '50%', border: respondeu && !isAnulada ? (isCorreta ? '2px solid #16a34a' : isSelecionada ? '2px solid #dc2626' : '2px solid #cbd5e1') : isSelecionada ? '2px solid #2563eb' : '2px solid #cbd5e1', mt: '2px', position: 'relative', '&::after': (respondeu && !isAnulada && (isCorreta || isSelecionada)) || (!respondeu && isSelecionada) || (respondeu && isAnulada && isSelecionada) ? { content: '""', position: 'absolute', inset: 4, borderRadius: '50%', backgroundColor: respondeu && !isAnulada ? (isCorreta ? '#16a34a' : '#dc2626') : '#2563eb' } : undefined }} />
                             <Typography variant="body1" sx={{ fontWeight: isCorreta && respondeu ? 700 : 600, color: '#374151', lineHeight: 1.7, wordBreak: 'break-word' }}>{alternativa}</Typography>
                           </Box>
                         );

@@ -43,6 +43,8 @@ type FormState = {
   altE: string;
 };
 
+const GABARITO_ANULADA = 'ANULADA';
+
 const initialForm: FormState = {
   disciplinaId: '',
   assuntoId: '',
@@ -104,9 +106,9 @@ function mapModalidadeToApi(modalidade: ModalidadeUI) {
 }
 
 function gabaritoPermitido(modalidade: ModalidadeUI) {
-  if (modalidade === 'Múltipla Escolha (A até E)') return ['A', 'B', 'C', 'D', 'E'];
-  if (modalidade === 'Múltipla Escolha (A até D)') return ['A', 'B', 'C', 'D'];
-  return ['C', 'E'];
+  if (modalidade === 'Múltipla Escolha (A até E)') return ['A', 'B', 'C', 'D', 'E', GABARITO_ANULADA];
+  if (modalidade === 'Múltipla Escolha (A até D)') return ['A', 'B', 'C', 'D', GABARITO_ANULADA];
+  return ['C', 'E', GABARITO_ANULADA];
 }
 
 function montarAlternativas(modalidade: ModalidadeUI, form: FormState) {
@@ -358,7 +360,12 @@ export default function NovaQuestaoPage() {
 
                 {form.modalidade === 'Certo/Errado' && <Alert severity="info" sx={{ borderRadius: 2 }}>As alternativas serão preenchidas automaticamente como C) Certo e E) Errado.</Alert>}
 
-                <TextField label={`Gabarito (${gabaritoPermitido(form.modalidade).join(', ')})`} fullWidth value={form.gabarito} onChange={(e) => setField('gabarito', e.target.value.toUpperCase())} />
+                <TextField select label="Gabarito" fullWidth value={form.gabarito} onChange={(e) => setField('gabarito', e.target.value.toUpperCase())}>
+                  <MenuItem value="">Selecione</MenuItem>
+                  {gabaritoPermitido(form.modalidade).map((gabarito) => (
+                    <MenuItem key={gabarito} value={gabarito}>{gabarito}</MenuItem>
+                  ))}
+                </TextField>
 
                 <Stack direction="row" spacing={1.5}>
                   <Button variant="outlined" onClick={() => setStep(1)} sx={{ borderRadius: 2, px: 2.5, py: 1.2, textTransform: 'none', fontWeight: 700 }}>Voltar</Button>

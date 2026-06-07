@@ -67,6 +67,7 @@ const defaults: FormData = {
 };
 
 const ADD_NEW = '__ADD_NEW__';
+const GABARITO_ANULADA = 'ANULADA';
 
 function dataOf<T>(value: T | { data: T }): T {
   return value && typeof value === 'object' && 'data' in value ? (value as { data: T }).data : (value as T);
@@ -121,8 +122,10 @@ function certoErrado(value?: string) {
 }
 
 function gabaritos(value?: string) {
-  if (certoErrado(value)) return ['CERTO', 'ERRADO'];
-  return norm(value) === 'A_D' ? ['A', 'B', 'C', 'D'] : ['A', 'B', 'C', 'D', 'E'];
+  if (certoErrado(value)) return ['CERTO', 'ERRADO', GABARITO_ANULADA];
+  return norm(value) === 'A_D'
+    ? ['A', 'B', 'C', 'D', GABARITO_ANULADA]
+    : ['A', 'B', 'C', 'D', 'E', GABARITO_ANULADA];
 }
 
 function montarAlternativas(prova: Prova | null, data: FormData) {

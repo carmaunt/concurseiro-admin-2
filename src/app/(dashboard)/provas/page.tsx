@@ -120,6 +120,10 @@ function renderSimpleMarkdown(text: string | null | undefined): string {
     .replace(/\n/g, '<br />');
 }
 
+function isGabaritoAnulada(gabarito: string | null | undefined) {
+  return String(gabarito || '').toUpperCase() === 'ANULADA';
+}
+
 export default function ProvasPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -702,12 +706,17 @@ export default function ProvasPage() {
                                   }}
                                 />
 
+                                {isGabaritoAnulada(questao.gabarito) && (
+                                  <Alert severity="warning" sx={{ borderRadius: 2 }}>Questão anulada.</Alert>
+                                )}
+
                                 <Stack spacing={1.5}>
                                   {(questao.alternativas || 'C) CERTO\nE) ERRADO')
                                     .split('\n')
                                     .filter((item) => item.trim())
                                     .map((alternativa, index) => {
                                       const letra = alternativa.trim().charAt(0).replace(')', '');
+                                      const isAnulada = isGabaritoAnulada(questao.gabarito);
                                       const isSelecionada =
                                         questaoEmResolucao === questao.idQuestion && respostaSelecionada === letra;
 
@@ -718,7 +727,7 @@ export default function ProvasPage() {
                                           ? 'C'
                                           : String(questao.gabarito).toUpperCase();
 
-                                      const isCorreta = letra.toUpperCase() === gabaritoNormalizado;
+                                      const isCorreta = !isAnulada && letra.toUpperCase() === gabaritoNormalizado;
 
                                       const respondeuQuestao =
                                         questaoEmResolucao === questao.idQuestion && respondeu;
@@ -741,7 +750,7 @@ export default function ProvasPage() {
                                           sx={{
                                             p: 2,
                                             borderRadius: 3,
-                                            border: respondeuQuestao
+                                            border: respondeuQuestao && !isAnulada
                                               ? isCorreta
                                                 ? '2px solid #16a34a'
                                                 : isSelecionada
@@ -750,7 +759,7 @@ export default function ProvasPage() {
                                               : isSelecionada
                                               ? '2px solid #2563eb'
                                               : '1px solid #e5e7eb',
-                                            backgroundColor: respondeuQuestao
+                                            backgroundColor: respondeuQuestao && !isAnulada
                                               ? isCorreta
                                                 ? '#dcfce7'
                                                 : isSelecionada
@@ -778,7 +787,7 @@ export default function ProvasPage() {
                                               height: 22,
                                               minWidth: 22,
                                               borderRadius: '50%',
-                                              border: respondeuQuestao
+                                              border: respondeuQuestao && !isAnulada
                                                 ? isCorreta
                                                   ? '2px solid #16a34a'
                                                   : isSelecionada
@@ -790,14 +799,15 @@ export default function ProvasPage() {
                                               mt: '2px',
                                               position: 'relative',
                                               '&::after':
-                                                (respondeuQuestao && (isCorreta || isSelecionada)) ||
-                                                (!respondeuQuestao && isSelecionada)
+                                                (respondeuQuestao && !isAnulada && (isCorreta || isSelecionada)) ||
+                                                (!respondeuQuestao && isSelecionada) ||
+                                                (respondeuQuestao && isAnulada && isSelecionada)
                                                   ? {
                                                       content: '""',
                                                       position: 'absolute',
                                                       inset: 4,
                                                       borderRadius: '50%',
-                                                      backgroundColor: respondeuQuestao
+                                                      backgroundColor: respondeuQuestao && !isAnulada
                                                         ? isCorreta
                                                           ? '#16a34a'
                                                           : '#dc2626'
