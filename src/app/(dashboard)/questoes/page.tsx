@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
 import { getCurrentUserRole } from '@/services/auth';
+import type { ApiResponse, QuestaoListItem, QuestoesPageData } from '@/types/api';
 import {
   Alert,
   Box,
@@ -30,48 +31,6 @@ import {
 } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-
-type QuestaoListItem = {
-  idQuestion: string;
-  enunciado: string;
-  questao: string;
-  alternativas: string;
-  textoApoioId: number | null;
-  textoApoioTitulo: string | null;
-  textoApoioConteudo: string | null;
-  disciplina: string;
-  disciplinaId: number;
-  assunto: string;
-  assuntoId: number;
-  banca: string;
-  bancaId: number;
-  instituicao: string;
-  instituicaoId: number;
-  ano: number;
-  cargo: string;
-  nivel: string;
-  modalidade: string;
-  gabarito: string;
-  provaId: number | null;
-  criadoEm: string;
-};
-
-type QuestoesPageData = {
-  content: QuestaoListItem[];
-  page: {
-    size: number;
-    number: number;
-    totalElements: number;
-    totalPages: number;
-  };
-};
-
-type ApiResponse<T> = {
-  success: boolean;
-  data: T;
-  timestamp: string;
-  path: string;
-};
 
 function extrairLetraAlternativa(alternativa: string) {
   return alternativa.trim().charAt(0).replace(')', '').toUpperCase();
@@ -314,7 +273,7 @@ export default function QuestoesPage() {
                     )}
 
                     <Stack spacing={1.5}>
-                      {questaoSelecionada.alternativas.split('\n').filter((item) => item.trim()).map((alternativa, index) => {
+                      {(questaoSelecionada.alternativas || '').split('\n').filter((item) => item.trim()).map((alternativa, index) => {
                         const letra = extrairLetraAlternativa(alternativa);
                         const isSelecionada = respostaSelecionada === letra;
                         const isAnulada = isGabaritoAnulada(questaoSelecionada.gabarito);

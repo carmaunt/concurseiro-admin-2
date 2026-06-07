@@ -15,9 +15,8 @@ import {
   Typography,
 } from '@mui/material';
 import { api } from '@/services/api';
+import type { CatalogoItem, TextoApoio } from '@/types/api';
 
-type CatalogoItem = { id: number; nome: string };
-type TextoApoioItem = { id: number; titulo: string | null; conteudo: string };
 type ModalidadeUI = '' | 'Múltipla Escolha (A até E)' | 'Múltipla Escolha (A até D)' | 'Certo/Errado';
 
 type FormState = {
@@ -85,14 +84,14 @@ function normalizarCatalogo(data: any): CatalogoItem[] {
     .filter((item: CatalogoItem) => item.id != null && item.nome);
 }
 
-function normalizarTextosApoio(data: any): TextoApoioItem[] {
+function normalizarTextosApoio(data: any): TextoApoio[] {
   return unwrapArray(data)
     .map((item: any) => ({
       id: item.id,
       titulo: item.titulo ?? null,
       conteudo: item.conteudo ?? '',
     }))
-    .filter((item: TextoApoioItem) => item.id != null && item.conteudo);
+    .filter((item: TextoApoio) => item.id != null && item.conteudo);
 }
 
 function escapeLine(value: string) {
@@ -136,7 +135,7 @@ export default function NovaQuestaoPage() {
   const [assuntos, setAssuntos] = useState<CatalogoItem[]>([]);
   const [bancas, setBancas] = useState<CatalogoItem[]>([]);
   const [instituicoes, setInstituicoes] = useState<CatalogoItem[]>([]);
-  const [textosApoio, setTextosApoio] = useState<TextoApoioItem[]>([]);
+  const [textosApoio, setTextosApoio] = useState<TextoApoio[]>([]);
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));

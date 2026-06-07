@@ -25,29 +25,12 @@ import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
 import { api } from '@/services/api';
-
-type Usuario = {
-  id: number;
-  nome: string;
-  email: string;
-  role: 'ADMIN' | 'VISITANTE';
-  status: 'ATIVO' | 'PENDENTE';
-};
-
-type UsuariosResponse = {
-  content: Usuario[];
-  page?: {
-    size: number;
-    number: number;
-    totalElements: number;
-    totalPages: number;
-  };
-};
+import type { UsuariosPageData } from '@/types/api';
 
 export default function UsuariosPage() {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError } = useQuery<UsuariosResponse>({
+  const { data, isLoading, isError } = useQuery<UsuariosPageData>({
     queryKey: ['usuarios'],
     queryFn: async () => {
       const res = await api.get('/api/v1/admin/usuarios?page=0&size=20');

@@ -28,7 +28,7 @@ Backend: `/home/mauricio/concurseiro-api`
 
 ## Prioridade 2 - Qualidade de codigo
 
-- [ ] Criar tipos compartilhados para respostas da API, paginacao, usuario, questao, prova e catalogo.
+- [x] Criar tipos compartilhados para respostas da API, paginacao, usuario, questao, prova e catalogo.
 - [ ] Substituir usos de `any` por tipos seguros ou validacao explicita.
 - [ ] Elevar regras criticas do ESLint de `warn` para `error` depois da limpeza.
 - [ ] Extrair helpers repetidos: `unwrapApiData`, `getApiErrorMessage`, parser de role e normalizadores de catalogo.

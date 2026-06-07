@@ -14,11 +14,7 @@ import {
   Typography,
 } from '@mui/material';
 import { api } from '@/services/api';
-
-type CatalogoItem = {
-  id: number;
-  nome: string;
-};
+import type { CatalogoItem } from '@/types/api';
 
 type FormData = {
   banca: string;

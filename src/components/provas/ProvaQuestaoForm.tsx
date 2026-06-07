@@ -18,19 +18,10 @@ import {
   Typography,
 } from '@mui/material';
 import { api } from '@/services/api';
+import type { CatalogoItem, ProvaDetalhe, TextoApoio } from '@/types/api';
 
-type Prova = {
-  id: number;
-  banca: string;
-  instituicao: string;
-  ano: number;
-  cargo: string;
-  nivel: string;
-  modalidade: string;
-};
-
-type Item = { id: number; nome: string };
-type TextoApoio = { id: number; titulo: string | null; conteudo: string };
+type Prova = ProvaDetalhe;
+type Item = CatalogoItem;
 
 type FormData = {
   textoApoioId: string;

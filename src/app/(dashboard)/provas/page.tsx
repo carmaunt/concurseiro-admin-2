@@ -32,68 +32,7 @@ import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlin
 import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import { useRouter } from 'next/navigation';
 import { getCurrentUserRole } from '@/services/auth';
-
-type ProvaListItem = {
-  id: number;
-  banca: string;
-  ano: number;
-  instituicao: string;
-  modalidade: string;
-  nivel?: string;
-  cargo?: string;
-  descricao?: string;
-  totalQuestoes?: number;
-  criadoEm?: string;
-};
-
-type ProvasPageData = {
-  content: ProvaListItem[];
-  page: {
-    size: number;
-    number: number;
-    totalElements: number;
-    totalPages: number;
-  };
-};
-
-type QuestaoListItem = {
-  idQuestion: string;
-  enunciado: string;
-  questao: string;
-  alternativas: string | null;
-  disciplina: string;
-  disciplinaId: number;
-  assunto: string;
-  assuntoId: number;
-  banca: string;
-  bancaId: number;
-  instituicao: string;
-  instituicaoId: number;
-  ano: number;
-  cargo: string;
-  nivel: string;
-  modalidade: string;
-  gabarito: string;
-  provaId: number | null;
-  criadoEm: string;
-};
-
-type QuestoesPageData = {
-  content: QuestaoListItem[];
-  page?: {
-    size: number;
-    number: number;
-    totalElements: number;
-    totalPages: number;
-  };
-};
-
-type ApiResponse<T> = {
-  success: boolean;
-  data: T;
-  timestamp: string;
-  path: string;
-};
+import type { ApiResponse, OptionalPageResponse, ProvaListItem, ProvasPageData, QuestaoListItem } from '@/types/api';
 
 function renderSimpleMarkdown(text: string | null | undefined): string {
   if (!text) return '';
@@ -213,7 +152,7 @@ export default function ProvasPage() {
     setQuestaoEmResolucao(null);
 
     try {
-      const res = await api.get<ApiResponse<QuestoesPageData> | QuestoesPageData | QuestaoListItem[]>(
+      const res = await api.get<ApiResponse<OptionalPageResponse<QuestaoListItem>> | OptionalPageResponse<QuestaoListItem> | QuestaoListItem[]>(
         '/api/v1/questoes',
         {
           params: {
@@ -229,7 +168,7 @@ export default function ProvasPage() {
       if (Array.isArray(res.data)) {
         lista = res.data;
       } else if (Array.isArray((res.data as any)?.content)) {
-        lista = (res.data as QuestoesPageData).content;
+        lista = (res.data as OptionalPageResponse<QuestaoListItem>).content;
       } else if (Array.isArray((res.data as any)?.data?.content)) {
         lista = (res.data as any).data.content;
       } else if (Array.isArray((res.data as any)?.data)) {
