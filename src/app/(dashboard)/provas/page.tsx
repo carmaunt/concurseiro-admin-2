@@ -121,7 +121,8 @@ function renderSimpleMarkdown(text: string | null | undefined): string {
 }
 
 function isGabaritoAnulada(gabarito: string | null | undefined) {
-  return String(gabarito || '').toUpperCase() === 'ANULADA';
+  const normalizado = String(gabarito || '').toUpperCase();
+  return normalizado === 'X' || normalizado === 'ANULADA';
 }
 
 export default function ProvasPage() {

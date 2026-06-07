@@ -67,7 +67,7 @@ const defaults: FormData = {
 };
 
 const ADD_NEW = '__ADD_NEW__';
-const GABARITO_ANULADA = 'ANULADA';
+const GABARITO_ANULADA = 'X';
 
 function dataOf<T>(value: T | { data: T }): T {
   return value && typeof value === 'object' && 'data' in value ? (value as { data: T }).data : (value as T);
@@ -126,6 +126,10 @@ function gabaritos(value?: string) {
   return norm(value) === 'A_D'
     ? ['A', 'B', 'C', 'D', GABARITO_ANULADA]
     : ['A', 'B', 'C', 'D', 'E', GABARITO_ANULADA];
+}
+
+function labelGabarito(gabarito: string) {
+  return gabarito === GABARITO_ANULADA ? 'Questão anulada' : gabarito;
 }
 
 function montarAlternativas(prova: Prova | null, data: FormData) {
@@ -482,7 +486,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
                     >
                       <MenuItem value="">Selecione</MenuItem>
                       {gabaritoOptions.map((g) => (
-                        <MenuItem key={g} value={g}>{g}</MenuItem>
+                        <MenuItem key={g} value={g}>{labelGabarito(g)}</MenuItem>
                       ))}
                     </TextField>
                   </Box>

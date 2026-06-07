@@ -43,7 +43,7 @@ type FormState = {
   altE: string;
 };
 
-const GABARITO_ANULADA = 'ANULADA';
+const GABARITO_ANULADA = 'X';
 
 const initialForm: FormState = {
   disciplinaId: '',
@@ -109,6 +109,10 @@ function gabaritoPermitido(modalidade: ModalidadeUI) {
   if (modalidade === 'Múltipla Escolha (A até E)') return ['A', 'B', 'C', 'D', 'E', GABARITO_ANULADA];
   if (modalidade === 'Múltipla Escolha (A até D)') return ['A', 'B', 'C', 'D', GABARITO_ANULADA];
   return ['C', 'E', GABARITO_ANULADA];
+}
+
+function labelGabarito(gabarito: string) {
+  return gabarito === GABARITO_ANULADA ? 'Questão anulada' : gabarito;
 }
 
 function montarAlternativas(modalidade: ModalidadeUI, form: FormState) {
@@ -363,7 +367,7 @@ export default function NovaQuestaoPage() {
                 <TextField select label="Gabarito" fullWidth value={form.gabarito} onChange={(e) => setField('gabarito', e.target.value.toUpperCase())}>
                   <MenuItem value="">Selecione</MenuItem>
                   {gabaritoPermitido(form.modalidade).map((gabarito) => (
-                    <MenuItem key={gabarito} value={gabarito}>{gabarito}</MenuItem>
+                    <MenuItem key={gabarito} value={gabarito}>{labelGabarito(gabarito)}</MenuItem>
                   ))}
                 </TextField>
 

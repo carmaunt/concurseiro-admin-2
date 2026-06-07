@@ -90,7 +90,8 @@ function extrairLetraAlternativa(alternativa: string) {
 }
 
 function isGabaritoAnulada(gabarito: string | null | undefined) {
-  return String(gabarito || '').toUpperCase() === 'ANULADA';
+  const normalizado = String(gabarito || '').toUpperCase();
+  return normalizado === 'X' || normalizado === 'ANULADA';
 }
 
 export default function QuestoesPage() {
