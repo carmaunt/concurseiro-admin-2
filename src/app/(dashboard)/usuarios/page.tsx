@@ -24,7 +24,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import { api } from '@/services/api';
+import { ativarUsuario as ativarUsuarioService, excluirUsuario, listarUsuarios } from '@/services/usuariosService';
 import type { UsuariosPageData } from '@/types/api';
 
 export default function UsuariosPage() {
@@ -32,23 +32,20 @@ export default function UsuariosPage() {
 
   const { data, isLoading, isError } = useQuery<UsuariosPageData>({
     queryKey: ['usuarios'],
-    queryFn: async () => {
-      const res = await api.get('/api/v1/admin/usuarios?page=0&size=20');
-      return res.data?.data ?? res.data;
-    },
+    queryFn: listarUsuarios,
   });
 
   const ativarUsuario = useMutation({
-    mutationFn: (id: number) => api.patch(`/api/v1/admin/usuarios/${id}/ativar`),
+    mutationFn: ativarUsuarioService,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
   });
 
   const deletarUsuario = useMutation({
-    mutationFn: (id: number) => api.delete(`/api/v1/admin/usuarios/${id}`),
+    mutationFn: excluirUsuario,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
   });
 
-  const usuarios = data?.content ?? [];
+  const usuarios = useMemo(() => data?.content ?? [], [data?.content]);
 
   const stats = useMemo(() => {
     const total = usuarios.length;

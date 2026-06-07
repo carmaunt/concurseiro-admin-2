@@ -18,23 +18,14 @@ import {
   Typography,
 } from '@mui/material';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
-import { API_BASE_URL, api, getApiErrorMessage, getApiErrorStatus } from '@/services/api';
-import { parseUserRole, saveAuthSession } from '@/services/auth';
-import { stringProp, unwrapApiData } from '@/utils/unknown';
+import { API_BASE_URL, getApiErrorMessage, getApiErrorStatus } from '@/services/api';
+import { saveAuthSession } from '@/services/auth';
+import { login } from '@/services/authService';
 
 type FormData = {
   email: string;
   senha: string;
 };
-
-function extractAuthSession(data: unknown) {
-  const payload = unwrapApiData<unknown>(data);
-
-  return {
-    email: stringProp(payload, ['email']),
-    role: parseUserRole(stringProp(payload, ['role'])),
-  };
-}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,12 +46,10 @@ export default function LoginPage() {
     }
 
     try {
-      const response = await api.post('/api/v1/auth/login', {
+      const { email, role } = await login({
         email: data.email,
         senha: data.senha,
       });
-
-      const { email, role } = extractAuthSession(response.data);
 
       if (!email || !role) {
         setErro('Dados de sessão não encontrados na resposta.');

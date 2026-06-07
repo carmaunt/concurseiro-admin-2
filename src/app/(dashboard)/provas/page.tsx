@@ -8,10 +8,10 @@ import { ProvaDeleteDialog } from '@/components/provas/ProvaDeleteDialog';
 import { ProvaDetalheDialog } from '@/components/provas/ProvaDetalheDialog';
 import { ProvasStats } from '@/components/provas/ProvasStats';
 import { ProvasTable } from '@/components/provas/ProvasTable';
-import { api, getApiErrorMessage } from '@/services/api';
+import { getApiErrorMessage } from '@/services/api';
 import { getCurrentUserRole } from '@/services/auth';
-import type { ApiResponse, OptionalPageResponse, ProvaListItem, ProvasPageData, QuestaoListItem } from '@/types/api';
-import { dataOf, prop } from '@/utils/unknown';
+import { excluirProva, listarProvas, listarQuestoesDaProva } from '@/services/provasService';
+import type { ProvaListItem, QuestaoListItem } from '@/types/api';
 
 export default function ProvasPage() {
   const router = useRouter();
@@ -35,50 +35,11 @@ export default function ProvasPage() {
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['provas', page, size],
-    queryFn: async () => {
-      const res = await api.get<ApiResponse<ProvasPageData> | ProvaListItem[]>('/api/v1/provas', {
-        params: {
-          page,
-          size,
-          sort: 'criadoEm,desc',
-        },
-      });
-
-      if (Array.isArray(res.data)) {
-        return {
-          content: res.data,
-          page: {
-            size,
-            number: page,
-            totalElements: res.data.length,
-            totalPages: 1,
-          },
-        };
-      }
-
-      const directData = prop(res.data, 'data');
-
-      if (Array.isArray(directData)) {
-        const list = directData as ProvaListItem[];
-        return {
-          content: list,
-          page: {
-            size,
-            number: page,
-            totalElements: list.length,
-            totalPages: 1,
-          },
-        };
-      }
-
-      return (res.data as ApiResponse<ProvasPageData>).data;
-    },
+    queryFn: () => listarProvas(page, size),
   });
 
   const deletarProva = useMutation({
-    mutationFn: async (id: number) => {
-      await api.delete(`/api/v1/provas/${id}`);
-    },
+    mutationFn: excluirProva,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['provas'] });
       setProvaSelecionada(null);
@@ -119,30 +80,7 @@ export default function ProvasPage() {
     setQuestaoEmResolucao(null);
 
     try {
-      const res = await api.get<ApiResponse<OptionalPageResponse<QuestaoListItem>> | OptionalPageResponse<QuestaoListItem> | QuestaoListItem[]>(
-        '/api/v1/questoes',
-        {
-          params: {
-            page: 0,
-            size: 50,
-            sort: 'criadoEm,desc',
-          },
-        }
-      );
-
-      let lista: QuestaoListItem[] = [];
-
-      if (Array.isArray(res.data)) {
-        lista = res.data;
-      } else if (Array.isArray(prop(res.data, 'content'))) {
-        lista = (res.data as OptionalPageResponse<QuestaoListItem>).content;
-      } else if (Array.isArray(prop(dataOf<unknown>(res.data), 'content'))) {
-        lista = prop(dataOf<unknown>(res.data), 'content') as QuestaoListItem[];
-      } else if (Array.isArray(dataOf<unknown>(res.data))) {
-        lista = dataOf<QuestaoListItem[]>(res.data);
-      }
-
-      setQuestoesDaProva(lista.filter((q) => q.provaId === prova.id));
+      setQuestoesDaProva(await listarQuestoesDaProva(prova.id));
     } catch (error: unknown) {
       setErroQuestoes(getApiErrorMessage(error, 'Não foi possível carregar as questões da prova.'));
     } finally {

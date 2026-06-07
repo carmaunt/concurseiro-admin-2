@@ -19,7 +19,8 @@ import {
 } from '@mui/material';
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import { api, getApiErrorStatus } from '@/services/api';
+import { getApiErrorStatus } from '@/services/api';
+import { register as registerUser } from '@/services/authService';
 
 type FormData = {
   nome: string;
@@ -49,7 +50,7 @@ export default function CadastroPage() {
     }
 
     try {
-      await api.post('/api/v1/auth/register', {
+      await registerUser({
         nome: data.nome,
         email: data.email,
         senha: data.senha,

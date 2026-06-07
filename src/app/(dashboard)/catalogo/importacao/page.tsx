@@ -14,18 +14,8 @@ import {
   Typography,
 } from '@mui/material';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import { api } from '@/services/api';
-
-type ImportacaoResponse = {
-  disciplinaId: number;
-  disciplina: string;
-  assuntosProcessados: number;
-  assuntosCriados: number;
-  assuntosExistentes: number;
-  subassuntosProcessados: number;
-  subassuntosCriados: number;
-  subassuntosExistentes: number;
-};
+import { getApiErrorMessage } from '@/services/api';
+import { importarCatalogoTexto, type ImportacaoCatalogoResponse } from '@/services/catalogoService';
 
 const exemplo = `Português
 
@@ -39,24 +29,9 @@ const exemplo = `Português
 * Reportagem
 * Entrevista`;
 
-function extrairMensagemErro(error: unknown) {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof (error as { response?: { data?: { detail?: unknown; message?: unknown } } }).response?.data === 'object'
-  ) {
-    const data = (error as { response: { data?: { detail?: unknown; message?: unknown } } }).response.data;
-    if (typeof data?.detail === 'string') return data.detail;
-    if (typeof data?.message === 'string') return data.message;
-  }
-
-  return 'Não foi possível importar o catálogo.';
-}
-
 export default function ImportacaoCatalogoPage() {
   const [texto, setTexto] = useState('');
-  const [resultado, setResultado] = useState<ImportacaoResponse | null>(null);
+  const [resultado, setResultado] = useState<ImportacaoCatalogoResponse | null>(null);
   const [erro, setErro] = useState('');
 
   const linhasValidas = useMemo(
@@ -65,21 +40,14 @@ export default function ImportacaoCatalogoPage() {
   );
 
   const importarMutation = useMutation({
-    mutationFn: async () => {
-      const response = await api.post<ImportacaoResponse>('/api/v1/admin/catalogo/importar-texto', texto, {
-        headers: {
-          'Content-Type': 'text/plain',
-        },
-      });
-      return response.data;
-    },
+    mutationFn: () => importarCatalogoTexto(texto),
     onSuccess: (data) => {
       setResultado(data);
       setErro('');
     },
     onError: (error) => {
       setResultado(null);
-      setErro(extrairMensagemErro(error));
+      setErro(getApiErrorMessage(error, 'Não foi possível importar o catálogo.'));
     },
   });
 

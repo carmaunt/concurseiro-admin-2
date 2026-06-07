@@ -14,8 +14,15 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { api, getApiErrorMessage } from '@/services/api';
-import { normalizeCatalogItems, normalizeSupportTexts } from '@/services/normalizers';
+import { getApiErrorMessage } from '@/services/api';
+import {
+  listarAssuntosPorDisciplina,
+  listarBancas,
+  listarDisciplinas,
+  listarInstituicoes,
+  listarTextosApoio,
+} from '@/services/catalogoService';
+import { criarQuestao } from '@/services/questoesService';
 import type { CatalogoItem, TextoApoio } from '@/types/api';
 
 type ModalidadeUI = '' | 'Múltipla Escolha (A até E)' | 'Múltipla Escolha (A até D)' | 'Certo/Errado';
@@ -119,16 +126,16 @@ export default function NovaQuestaoPage() {
     async function carregarBase() {
       try {
         setLoading(true);
-        const [disciplinasRes, bancasRes, instituicoesRes, textosRes] = await Promise.all([
-          api.get('/api/v1/catalogo/disciplinas'),
-          api.get('/api/v1/catalogo/bancas'),
-          api.get('/api/v1/catalogo/instituicoes'),
-          api.get('/api/v1/textos-apoio', { params: { page: 0, size: 50 } }),
+        const [disciplinasData, bancasData, instituicoesData, textosData] = await Promise.all([
+          listarDisciplinas(),
+          listarBancas(),
+          listarInstituicoes(),
+          listarTextosApoio(),
         ]);
-        setDisciplinas(normalizeCatalogItems(disciplinasRes.data));
-        setBancas(normalizeCatalogItems(bancasRes.data));
-        setInstituicoes(normalizeCatalogItems(instituicoesRes.data));
-        setTextosApoio(normalizeSupportTexts(textosRes.data));
+        setDisciplinas(disciplinasData);
+        setBancas(bancasData);
+        setInstituicoes(instituicoesData);
+        setTextosApoio(textosData);
       } catch (error: unknown) {
         setMsg({ type: 'error', text: getApiErrorMessage(error, 'Não foi possível carregar os dados iniciais.') });
       } finally {
@@ -148,8 +155,7 @@ export default function NovaQuestaoPage() {
       }
 
       try {
-        const res = await api.get(`/api/v1/catalogo/disciplinas/${encodeURIComponent(form.disciplinaId)}/assuntos`);
-        setAssuntos(normalizeCatalogItems(res.data));
+        setAssuntos(await listarAssuntosPorDisciplina(form.disciplinaId));
       } catch {
         setAssuntos([]);
       }
@@ -227,7 +233,7 @@ export default function NovaQuestaoPage() {
 
     try {
       setSaving(true);
-      await api.post('/api/v1/questoes', payload);
+      await criarQuestao(payload);
       setMsg({ type: 'success', text: 'Questão cadastrada com sucesso!' });
       setTimeout(() => router.push('/questoes'), 700);
     } catch (error: unknown) {

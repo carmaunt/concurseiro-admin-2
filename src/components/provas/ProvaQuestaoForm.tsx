@@ -17,10 +17,18 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { api, getApiErrorMessage } from '@/services/api';
-import { normalizeCatalogItem, normalizeCatalogItems, normalizeSupportTexts } from '@/services/normalizers';
+import { getApiErrorMessage } from '@/services/api';
+import {
+  criarAssuntoCatalogo,
+  criarItemCatalogo,
+  criarSubassuntoCatalogo,
+  listarAssuntosPorDisciplina,
+  listarDisciplinas,
+  listarSubassuntosPorAssunto,
+  listarTextosApoio,
+} from '@/services/catalogoService';
+import { criarQuestaoDaProva, obterProva } from '@/services/provasService';
 import type { CatalogoItem, ProvaDetalhe, TextoApoio } from '@/types/api';
-import { unwrapApiData } from '@/utils/unknown';
 
 type Prova = ProvaDetalhe;
 type Item = CatalogoItem;
@@ -127,14 +135,14 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     async function init() {
       try {
         setLoading(true);
-        const [provaRes, disciplinasRes, textosRes] = await Promise.all([
-          api.get(`/api/v1/provas/${provaId}`),
-          api.get('/api/v1/catalogo/disciplinas'),
-          api.get('/api/v1/textos-apoio', { params: { page: 0, size: 50 } }),
+        const [provaData, disciplinasData, textosData] = await Promise.all([
+          obterProva(provaId),
+          listarDisciplinas(),
+          listarTextosApoio(),
         ]);
-        setProva(unwrapApiData<Prova>(provaRes.data));
-        setDisciplinas(normalizeCatalogItems(disciplinasRes.data));
-        setTextosApoio(normalizeSupportTexts(textosRes.data));
+        setProva(provaData);
+        setDisciplinas(disciplinasData);
+        setTextosApoio(textosData);
       } catch {
         setErro('Não foi possível carregar os dados da página.');
       } finally {
@@ -151,8 +159,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       setValue('assuntoId', '');
       setValue('subassunto', '');
       if (!disciplinaId) return;
-      const res = await api.get(`/api/v1/catalogo/disciplinas/${disciplinaId}/assuntos`);
-      setAssuntos(normalizeCatalogItems(res.data));
+      setAssuntos(await listarAssuntosPorDisciplina(disciplinaId));
     }
     load().catch(() => setAssuntos([]));
   }, [disciplinaId, setValue]);
@@ -162,8 +169,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       setSubassuntos([]);
       setValue('subassunto', '');
       if (!assuntoId) return;
-      const res = await api.get(`/api/v1/catalogo/assuntos/${assuntoId}/subassuntos`);
-      setSubassuntos(normalizeCatalogItems(res.data));
+      setSubassuntos(await listarSubassuntosPorAssunto(assuntoId));
     }
     load().catch(() => setSubassuntos([]));
   }, [assuntoId, setValue]);
@@ -173,8 +179,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     if (!nome) return;
 
     try {
-      const res = await api.post('/api/v1/admin/catalogo/disciplinas', { nome });
-      const novo = normalizeCatalogItem(res.data);
+      const novo = await criarItemCatalogo('disciplinas', nome);
       setDisciplinas((atual) => [novo, ...atual.filter((item) => item.id !== novo.id)]);
       setValue('disciplinaId', String(novo.id));
       setSucesso(`Disciplina "${novo.nome}" adicionada.`);
@@ -193,11 +198,10 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     if (!nome) return;
 
     try {
-      const res = await api.post('/api/v1/admin/catalogo/assuntos', {
+      const novo = await criarAssuntoCatalogo({
         disciplinaId: Number(disciplinaId),
         nome,
       });
-      const novo = normalizeCatalogItem(res.data);
       setAssuntos((atual) => [novo, ...atual.filter((item) => item.id !== novo.id)]);
       setValue('assuntoId', String(novo.id));
       setSucesso(`Assunto "${novo.nome}" adicionado.`);
@@ -216,11 +220,10 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     if (!nome) return;
 
     try {
-      const res = await api.post('/api/v1/admin/catalogo/subassuntos', {
+      const novo = await criarSubassuntoCatalogo({
         assuntoId: Number(assuntoId),
         nome,
       });
-      const novo = normalizeCatalogItem(res.data);
       setSubassuntos((atual) => [novo, ...atual.filter((item) => item.nome !== novo.nome)]);
       setValue('subassunto', novo.nome);
       setSucesso(`Subassunto "${novo.nome}" adicionado.`);
@@ -239,7 +242,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     }
 
     try {
-      await api.post(`/api/v1/provas/${provaId}/questoes`, {
+      await criarQuestaoDaProva(provaId, {
         enunciado: data.enunciado.trim(),
         questao: data.questao.trim(),
         alternativas: montarAlternativas(prova, data),

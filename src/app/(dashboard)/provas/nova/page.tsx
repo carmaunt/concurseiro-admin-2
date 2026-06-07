@@ -13,8 +13,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { api, getApiErrorMessage, getApiErrorStatus } from '@/services/api';
-import { normalizeCatalogItem, normalizeCatalogItems } from '@/services/normalizers';
+import { getApiErrorMessage, getApiErrorStatus } from '@/services/api';
+import { criarItemCatalogo as criarItemCatalogoService, listarBancas, listarInstituicoes } from '@/services/catalogoService';
+import { criarProva } from '@/services/provasService';
 import type { CatalogoItem } from '@/types/api';
 
 type FormData = {
@@ -65,13 +66,13 @@ export default function NovaProvaPage() {
       try {
         setCarregandoCatalogos(true);
 
-        const [bancasRes, instituicoesRes] = await Promise.all([
-          api.get('/api/v1/catalogo/bancas'),
-          api.get('/api/v1/catalogo/instituicoes'),
+        const [bancasData, instituicoesData] = await Promise.all([
+          listarBancas(),
+          listarInstituicoes(),
         ]);
 
-        setBancas(normalizeCatalogItems(bancasRes.data));
-        setInstituicoes(normalizeCatalogItems(instituicoesRes.data));
+        setBancas(bancasData);
+        setInstituicoes(instituicoesData);
       } catch {
         setErro('Não foi possível carregar bancas e instituições do catálogo.');
       } finally {
@@ -86,13 +87,7 @@ export default function NovaProvaPage() {
     const nomeLimpo = nome.trim();
     if (!nomeLimpo) throw new Error('Digite um nome válido.');
 
-    const path =
-      tipo === 'banca'
-        ? '/api/v1/admin/catalogo/bancas'
-        : '/api/v1/admin/catalogo/instituicoes';
-
-    const res = await api.post(path, { nome: nomeLimpo });
-    const created = normalizeCatalogItem(res.data);
+    const created = await criarItemCatalogoService(tipo === 'banca' ? 'bancas' : 'instituicoes', nomeLimpo);
 
     if (!Number.isFinite(created.id)) {
       throw new Error('O backend não retornou o id do item criado.');
@@ -151,7 +146,7 @@ export default function NovaProvaPage() {
     }
 
     try {
-      await api.post('/api/v1/provas', {
+      await criarProva({
         banca: form.banca,
         instituicaoId: Number(form.instituicaoId),
         ano: Number(form.ano),

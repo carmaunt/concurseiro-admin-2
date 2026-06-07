@@ -4,9 +4,10 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { api, getApiErrorMessage } from '@/services/api';
+import { getApiErrorMessage } from '@/services/api';
 import { getCurrentUserRole } from '@/services/auth';
-import type { ApiResponse, QuestaoListItem, QuestoesPageData } from '@/types/api';
+import { excluirQuestao as excluirQuestaoService, listarQuestoes } from '@/services/questoesService';
+import type { QuestaoListItem } from '@/types/api';
 import {
   Alert,
   Box,
@@ -64,18 +65,11 @@ export default function QuestoesPage() {
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['questoes', page, size],
-    queryFn: async () => {
-      const res = await api.get<ApiResponse<QuestoesPageData>>('/api/v1/questoes', {
-        params: { page, size, sort: 'criadoEm,desc' },
-      });
-      return res.data.data;
-    },
+    queryFn: () => listarQuestoes(page, size),
   });
 
   const excluirQuestao = useMutation({
-    mutationFn: async (idQuestion: string) => {
-      await api.delete(`/api/v1/admin/questoes/${idQuestion}`);
-    },
+    mutationFn: excluirQuestaoService,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questoes'] });
       setQuestaoSelecionada(null);
