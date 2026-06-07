@@ -33,7 +33,7 @@ Backend: `/home/mauricio/concurseiro-api`
 - [x] Elevar regras criticas do ESLint de `warn` para `error` depois da limpeza.
 - [x] Extrair helpers repetidos: `unwrapApiData`, `getApiErrorMessage`, parser de role e normalizadores de catalogo.
 - [x] Remover `alert()` e `window.confirm()` em favor de Dialog/Snackbar padronizados.
-- [ ] Isolar renderizacao de markdown/conteudo HTML em componente testado e sanitizado.
+- [x] Isolar renderizacao de markdown/conteudo HTML em componente testado e sanitizado.
 
 ## Prioridade 3 - Arquitetura do frontend
 

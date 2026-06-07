@@ -33,21 +33,10 @@ import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined
 import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
 import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import { useRouter } from 'next/navigation';
+import { SafeMarkdown } from '@/components/content/SafeMarkdown';
 import { getCurrentUserRole } from '@/services/auth';
 import type { ApiResponse, OptionalPageResponse, ProvaListItem, ProvasPageData, QuestaoListItem } from '@/types/api';
 import { dataOf, prop } from '@/utils/unknown';
-
-function renderSimpleMarkdown(text: string | null | undefined): string {
-  if (!text) return '';
-
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/\n/g, '<br />');
-}
 
 function isGabaritoAnulada(gabarito: string | null | undefined) {
   const normalizado = String(gabarito || '').toUpperCase();
@@ -620,20 +609,9 @@ export default function ProvasPage() {
                                   )}
                                 </Stack>
 
-                                <Typography
-                                  sx={{ color: '#374151' }}
-                                  dangerouslySetInnerHTML={{
-                                    __html: renderSimpleMarkdown(questao.enunciado),
-                                  }}
-                                />
+                                <SafeMarkdown value={questao.enunciado} sx={{ color: '#374151' }} />
 
-                                
-                                <Typography
-                                  sx={{ color: '#374151' }}
-                                  dangerouslySetInnerHTML={{
-                                    __html: renderSimpleMarkdown(questao.questao),
-                                  }}
-                                />
+                                <SafeMarkdown value={questao.questao} sx={{ color: '#374151' }} />
 
                                 {isGabaritoAnulada(questao.gabarito) && (
                                   <Alert severity="warning" sx={{ borderRadius: 2 }}>Questão anulada.</Alert>
@@ -747,15 +725,13 @@ export default function ProvasPage() {
                                           />
 
                                           <Box sx={{ flex: 1 }}>
-                                            <Typography
+                                            <SafeMarkdown
+                                              value={alternativa}
                                               variant="body1"
                                               sx={{
                                                 fontWeight: 400,
                                                 color: '#374151',
                                                 lineHeight: 1.7,
-                                              }}
-                                              dangerouslySetInnerHTML={{
-                                                __html: renderSimpleMarkdown(alternativa),
                                               }}
                                             />
                                           </Box>
