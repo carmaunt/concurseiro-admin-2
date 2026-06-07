@@ -19,7 +19,7 @@ Backend: `/home/mauricio/concurseiro-api`
 
 ## Prioridade 1 - Fundacao tecnica e seguranca
 
-- [ ] Configurar ambiente por variaveis (`NEXT_PUBLIC_API_URL`) e remover URL hardcoded da API.
+- [x] Configurar ambiente por variaveis (`NEXT_PUBLIC_API_URL`) e remover URL hardcoded da API.
 - [ ] Criar `.env.example` do frontend com as variaveis obrigatorias.
 - [ ] Centralizar cliente HTTP com tratamento padronizado de erro, resposta e redirecionamento em `401`.
 - [ ] Centralizar autenticacao e leitura de usuario/role, removendo logica duplicada de JWT nas telas.
@@ -67,4 +67,3 @@ Backend: `/home/mauricio/concurseiro-api`
 - [ ] Documentar arquitetura do frontend e contrato com backend.
 - [ ] Documentar fluxo de auth, roles e permissoes.
 - [ ] Documentar como validar uma entrega antes de merge/deploy.
-

@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 export const api = axios.create({
-  baseURL: 'https://concurseiro-api-lnae.onrender.com',
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
 });
 
 // interceptor para enviar o token automaticamente
