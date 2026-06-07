@@ -45,8 +45,8 @@ export default function LoginPage() {
         senha: data.senha,
       });
 
-      const email = response.data?.data?.email;
-      const role = parseUserRole(response.data?.data?.role);
+      const email = response.data?.email;
+      const role = parseUserRole(response.data?.role);
 
       if (!email || !role) {
         setErro('Dados de sessão não encontrados na resposta.');
