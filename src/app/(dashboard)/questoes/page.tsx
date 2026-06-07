@@ -1,12 +1,11 @@
 // src/app/(dashboard)/questoes/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useCurrentUserRole } from '@/hooks/useAuthSession';
+import { useExcluirQuestao, useQuestoes } from '@/hooks/useQuestoes';
 import { getApiErrorMessage } from '@/services/api';
-import { getCurrentUserRole } from '@/services/auth';
-import { excluirQuestao as excluirQuestaoService, listarQuestoes } from '@/services/questoesService';
 import type { QuestaoListItem } from '@/types/api';
 import {
   Alert,
@@ -45,7 +44,6 @@ function isGabaritoAnulada(gabarito: string | null | undefined) {
 }
 
 export default function QuestoesPage() {
-  const queryClient = useQueryClient();
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -55,23 +53,14 @@ export default function QuestoesPage() {
   const [questaoSelecionada, setQuestaoSelecionada] = useState<QuestaoListItem | null>(null);
   const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null);
   const [respondeu, setRespondeu] = useState(false);
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const userRole = useCurrentUserRole();
   const [questaoParaExcluir, setQuestaoParaExcluir] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  useEffect(() => {
-    setUserRole(getCurrentUserRole());
-  }, []);
+  const { data, isLoading, isError, error } = useQuestoes(page, size);
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['questoes', page, size],
-    queryFn: () => listarQuestoes(page, size),
-  });
-
-  const excluirQuestao = useMutation({
-    mutationFn: excluirQuestaoService,
+  const excluirQuestao = useExcluirQuestao({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['questoes'] });
       setQuestaoSelecionada(null);
       setQuestaoParaExcluir(null);
       setFeedback({ type: 'success', message: 'Questão excluída com sucesso.' });

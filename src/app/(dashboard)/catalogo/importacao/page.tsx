@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
 import {
   Alert,
   Box,
@@ -14,8 +13,9 @@ import {
   Typography,
 } from '@mui/material';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
+import { useImportarCatalogoTexto } from '@/hooks/useCatalogo';
 import { getApiErrorMessage } from '@/services/api';
-import { importarCatalogoTexto, type ImportacaoCatalogoResponse } from '@/services/catalogoService';
+import type { ImportacaoCatalogoResponse } from '@/services/catalogoService';
 
 const exemplo = `Português
 
@@ -39,8 +39,7 @@ export default function ImportacaoCatalogoPage() {
     [texto]
   );
 
-  const importarMutation = useMutation({
-    mutationFn: () => importarCatalogoTexto(texto),
+  const importarMutation = useImportarCatalogoTexto({
     onSuccess: (data) => {
       setResultado(data);
       setErro('');
@@ -58,7 +57,7 @@ export default function ImportacaoCatalogoPage() {
       return;
     }
 
-    importarMutation.mutate();
+    importarMutation.mutate(texto);
   };
 
   return (

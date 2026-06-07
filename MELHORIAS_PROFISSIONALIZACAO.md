@@ -39,7 +39,7 @@ Backend: `/home/mauricio/concurseiro-api`
 
 - [x] Separar paginas grandes em componentes menores por dominio.
 - [x] Criar camada de servicos por dominio: auth, questoes, provas, usuarios e catalogo.
-- [ ] Criar hooks de dados por dominio usando React Query.
+- [x] Criar hooks de dados por dominio usando React Query.
 - [ ] Padronizar layouts de listagem, estados vazios, loading, erro e acoes destrutivas.
 - [ ] Criar tema MUI proprio para cores, tipografia, raio, botoes, tabelas e formularios.
 

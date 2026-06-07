@@ -2,7 +2,6 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Box,
@@ -24,26 +23,12 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import GroupOutlinedIcon from '@mui/icons-material/GroupOutlined';
 import PendingActionsOutlinedIcon from '@mui/icons-material/PendingActionsOutlined';
 import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import { ativarUsuario as ativarUsuarioService, excluirUsuario, listarUsuarios } from '@/services/usuariosService';
-import type { UsuariosPageData } from '@/types/api';
+import { useAtivarUsuario, useExcluirUsuario, useUsuarios } from '@/hooks/useUsuarios';
 
 export default function UsuariosPage() {
-  const queryClient = useQueryClient();
-
-  const { data, isLoading, isError } = useQuery<UsuariosPageData>({
-    queryKey: ['usuarios'],
-    queryFn: listarUsuarios,
-  });
-
-  const ativarUsuario = useMutation({
-    mutationFn: ativarUsuarioService,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
-  });
-
-  const deletarUsuario = useMutation({
-    mutationFn: excluirUsuario,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['usuarios'] }),
-  });
+  const { data, isLoading, isError } = useUsuarios();
+  const ativarUsuario = useAtivarUsuario();
+  const deletarUsuario = useExcluirUsuario();
 
   const usuarios = useMemo(() => data?.content ?? [], [data?.content]);
 

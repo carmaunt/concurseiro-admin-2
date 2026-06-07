@@ -1,47 +1,34 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Alert, Box, Button, CircularProgress, Snackbar, Stack, Typography } from '@mui/material';
 import { ProvaDeleteDialog } from '@/components/provas/ProvaDeleteDialog';
 import { ProvaDetalheDialog } from '@/components/provas/ProvaDetalheDialog';
 import { ProvasStats } from '@/components/provas/ProvasStats';
 import { ProvasTable } from '@/components/provas/ProvasTable';
+import { useCurrentUserRole } from '@/hooks/useAuthSession';
+import { useExcluirProva, useProvas, useQuestoesDaProva } from '@/hooks/useProvas';
 import { getApiErrorMessage } from '@/services/api';
-import { getCurrentUserRole } from '@/services/auth';
-import { excluirProva, listarProvas, listarQuestoesDaProva } from '@/services/provasService';
-import type { ProvaListItem, QuestaoListItem } from '@/types/api';
+import type { ProvaListItem } from '@/types/api';
 
 export default function ProvasPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const userRole = useCurrentUserRole();
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [provaSelecionada, setProvaSelecionada] = useState<ProvaListItem | null>(null);
-  const [questoesDaProva, setQuestoesDaProva] = useState<QuestaoListItem[]>([]);
-  const [loadingQuestoes, setLoadingQuestoes] = useState(false);
-  const [erroQuestoes, setErroQuestoes] = useState('');
   const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null);
   const [respondeu, setRespondeu] = useState(false);
   const [questaoEmResolucao, setQuestaoEmResolucao] = useState<string | null>(null);
   const [provaParaExcluir, setProvaParaExcluir] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  useEffect(() => {
-    setUserRole(getCurrentUserRole());
-  }, []);
+  const { data, isLoading, isError, error } = useProvas(page, size);
+  const questoesDaProvaQuery = useQuestoesDaProva(provaSelecionada?.id ?? null);
 
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['provas', page, size],
-    queryFn: () => listarProvas(page, size),
-  });
-
-  const deletarProva = useMutation({
-    mutationFn: excluirProva,
+  const deletarProva = useExcluirProva({
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['provas'] });
       setProvaSelecionada(null);
       setProvaParaExcluir(null);
       setFeedback({ type: 'success', message: 'Prova excluída com sucesso.' });
@@ -70,22 +57,11 @@ export default function ProvasPage() {
   const sizeAtual = data?.page?.size ?? size;
   const isAdmin = userRole === 'ADMIN';
 
-  const handleVisualizarProva = async (prova: ProvaListItem) => {
+  const handleVisualizarProva = (prova: ProvaListItem) => {
     setProvaSelecionada(prova);
-    setErroQuestoes('');
-    setLoadingQuestoes(true);
-    setQuestoesDaProva([]);
     setRespostaSelecionada(null);
     setRespondeu(false);
     setQuestaoEmResolucao(null);
-
-    try {
-      setQuestoesDaProva(await listarQuestoesDaProva(prova.id));
-    } catch (error: unknown) {
-      setErroQuestoes(getApiErrorMessage(error, 'Não foi possível carregar as questões da prova.'));
-    } finally {
-      setLoadingQuestoes(false);
-    }
   };
 
   const confirmarExclusao = () => {
@@ -165,9 +141,13 @@ export default function ProvasPage() {
 
       <ProvaDetalheDialog
         prova={provaSelecionada}
-        questoes={questoesDaProva}
-        loadingQuestoes={loadingQuestoes}
-        erroQuestoes={erroQuestoes}
+        questoes={questoesDaProvaQuery.data ?? []}
+        loadingQuestoes={questoesDaProvaQuery.isFetching}
+        erroQuestoes={
+          questoesDaProvaQuery.isError
+            ? getApiErrorMessage(questoesDaProvaQuery.error, 'Não foi possível carregar as questões da prova.')
+            : ''
+        }
         respostaSelecionada={respostaSelecionada}
         respondeu={respondeu}
         questaoEmResolucao={questaoEmResolucao}

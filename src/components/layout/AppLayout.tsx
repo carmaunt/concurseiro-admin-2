@@ -17,7 +17,8 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useRouter, usePathname } from 'next/navigation';
-import { clearAuthSession, getCurrentUserRole } from '@/services/auth';
+import { useCurrentUserRole } from '@/hooks/useAuthSession';
+import { clearAuthSession } from '@/services/auth';
 import { logout } from '@/services/authService';
 
 const drawerWidth = 240;
@@ -28,12 +29,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const userRole = useCurrentUserRole();
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  useEffect(() => {
-    setUserRole(getCurrentUserRole());
-  }, []);
 
   useEffect(() => {
     setMobileOpen(false);
