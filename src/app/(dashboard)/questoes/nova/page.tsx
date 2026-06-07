@@ -14,8 +14,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { api } from '@/services/api';
+import { api, getApiErrorMessage } from '@/services/api';
 import type { CatalogoItem, TextoApoio } from '@/types/api';
+import { arrayOf, numberProp, stringProp } from '@/utils/unknown';
 
 type ModalidadeUI = '' | 'Múltipla Escolha (A até E)' | 'Múltipla Escolha (A até D)' | 'Certo/Errado';
 
@@ -67,29 +68,21 @@ const initialForm: FormState = {
   altE: '',
 };
 
-function unwrapArray(data: any): any[] {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.content)) return data.content;
-  if (Array.isArray(data?.data?.content)) return data.data.content;
-  return [];
-}
-
-function normalizarCatalogo(data: any): CatalogoItem[] {
-  return unwrapArray(data)
-    .map((item: any) => ({
-      id: item.id ?? item.idDisciplina ?? item.idAssunto ?? item.idSubassunto ?? item.idBanca ?? item.idInstituicao,
-      nome: item.nome ?? item.titulo ?? item.descricao ?? item.name,
+function normalizarCatalogo(data: unknown): CatalogoItem[] {
+  return arrayOf(data)
+    .map((item) => ({
+      id: numberProp(item, ['id', 'idDisciplina', 'idAssunto', 'idSubassunto', 'idBanca', 'idInstituicao']),
+      nome: stringProp(item, ['nome', 'titulo', 'descricao', 'name']),
     }))
     .filter((item: CatalogoItem) => item.id != null && item.nome);
 }
 
-function normalizarTextosApoio(data: any): TextoApoio[] {
-  return unwrapArray(data)
-    .map((item: any) => ({
-      id: item.id,
-      titulo: item.titulo ?? null,
-      conteudo: item.conteudo ?? '',
+function normalizarTextosApoio(data: unknown): TextoApoio[] {
+  return arrayOf(data)
+    .map((item) => ({
+      id: numberProp(item, ['id']),
+      titulo: stringProp(item, ['titulo']) || null,
+      conteudo: stringProp(item, ['conteudo']),
     }))
     .filter((item: TextoApoio) => item.id != null && item.conteudo);
 }
@@ -155,8 +148,8 @@ export default function NovaQuestaoPage() {
         setBancas(normalizarCatalogo(bancasRes.data));
         setInstituicoes(normalizarCatalogo(instituicoesRes.data));
         setTextosApoio(normalizarTextosApoio(textosRes.data));
-      } catch (error: any) {
-        setMsg({ type: 'error', text: error?.response?.data?.message || 'Não foi possível carregar os dados iniciais.' });
+      } catch (error: unknown) {
+        setMsg({ type: 'error', text: getApiErrorMessage(error, 'Não foi possível carregar os dados iniciais.') });
       } finally {
         setLoading(false);
       }
@@ -256,8 +249,8 @@ export default function NovaQuestaoPage() {
       await api.post('/api/v1/questoes', payload);
       setMsg({ type: 'success', text: 'Questão cadastrada com sucesso!' });
       setTimeout(() => router.push('/questoes'), 700);
-    } catch (error: any) {
-      setMsg({ type: 'error', text: error?.response?.data?.message || error?.response?.data?.detail || 'Falha ao salvar a questão.' });
+    } catch (error: unknown) {
+      setMsg({ type: 'error', text: getApiErrorMessage(error, 'Falha ao salvar a questão.') });
     } finally {
       setSaving(false);
     }

@@ -17,8 +17,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { api } from '@/services/api';
+import { api, getApiErrorMessage } from '@/services/api';
 import type { CatalogoItem, ProvaDetalhe, TextoApoio } from '@/types/api';
+import { arrayOf, dataOf, numberProp, stringProp } from '@/utils/unknown';
 
 type Prova = ProvaDetalhe;
 type Item = CatalogoItem;
@@ -60,43 +61,31 @@ const defaults: FormData = {
 const ADD_NEW = '__ADD_NEW__';
 const GABARITO_ANULADA = 'X';
 
-function dataOf<T>(value: T | { data: T }): T {
-  return value && typeof value === 'object' && 'data' in value ? (value as { data: T }).data : (value as T);
-}
-
-function arrayOf(value: any): any[] {
-  return Array.isArray(value)
-    ? value
-    : Array.isArray(value?.data)
-      ? value.data
-      : Array.isArray(value?.content)
-        ? value.content
-        : Array.isArray(value?.data?.content)
-          ? value.data.content
-          : [];
-}
-
-function itens(value: any): Item[] {
+function itens(value: unknown): Item[] {
   return arrayOf(value)
     .map((x) => ({
-      id: x.id ?? x.idDisciplina ?? x.idAssunto ?? x.idSubassunto,
-      nome: x.nome ?? x.titulo ?? x.descricao ?? x.name,
+      id: numberProp(x, ['id', 'idDisciplina', 'idAssunto', 'idSubassunto']),
+      nome: stringProp(x, ['nome', 'titulo', 'descricao', 'name']),
     }))
-    .filter((x) => x.id && x.nome);
+    .filter((x) => Number.isFinite(x.id) && x.nome);
 }
 
-function itemOf(value: any): Item {
-  const raw = dataOf<any>(value);
+function itemOf(value: unknown): Item {
+  const raw = dataOf<unknown>(value);
   return {
-    id: Number(raw.id ?? raw.idDisciplina ?? raw.idAssunto ?? raw.idSubassunto),
-    nome: String(raw.nome ?? raw.titulo ?? raw.descricao ?? raw.name),
+    id: numberProp(raw, ['id', 'idDisciplina', 'idAssunto', 'idSubassunto']),
+    nome: stringProp(raw, ['nome', 'titulo', 'descricao', 'name']),
   };
 }
 
-function textos(value: any): TextoApoio[] {
+function textos(value: unknown): TextoApoio[] {
   return arrayOf(value)
-    .map((x) => ({ id: x.id, titulo: x.titulo ?? null, conteudo: x.conteudo ?? '' }))
-    .filter((x) => x.id && x.conteudo);
+    .map((x) => ({
+      id: numberProp(x, ['id']),
+      titulo: stringProp(x, ['titulo']) || null,
+      conteudo: stringProp(x, ['conteudo']),
+    }))
+    .filter((x) => Number.isFinite(x.id) && x.conteudo);
 }
 
 function norm(value?: string) {
@@ -215,8 +204,8 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       setDisciplinas((atual) => [novo, ...atual.filter((item) => item.id !== novo.id)]);
       setValue('disciplinaId', String(novo.id));
       setSucesso(`Disciplina "${novo.nome}" adicionada.`);
-    } catch (e: any) {
-      setErro(e?.response?.data?.detail || e?.response?.data?.message || 'Não foi possível adicionar a disciplina.');
+    } catch (error: unknown) {
+      setErro(getApiErrorMessage(error, 'Não foi possível adicionar a disciplina.'));
     }
   }
 
@@ -238,8 +227,8 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       setAssuntos((atual) => [novo, ...atual.filter((item) => item.id !== novo.id)]);
       setValue('assuntoId', String(novo.id));
       setSucesso(`Assunto "${novo.nome}" adicionado.`);
-    } catch (e: any) {
-      setErro(e?.response?.data?.detail || e?.response?.data?.message || 'Não foi possível adicionar o assunto.');
+    } catch (error: unknown) {
+      setErro(getApiErrorMessage(error, 'Não foi possível adicionar o assunto.'));
     }
   }
 
@@ -261,8 +250,8 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       setSubassuntos((atual) => [novo, ...atual.filter((item) => item.nome !== novo.nome)]);
       setValue('subassunto', novo.nome);
       setSucesso(`Subassunto "${novo.nome}" adicionado.`);
-    } catch (e: any) {
-      setErro(e?.response?.data?.detail || e?.response?.data?.message || 'Não foi possível adicionar o subassunto.');
+    } catch (error: unknown) {
+      setErro(getApiErrorMessage(error, 'Não foi possível adicionar o subassunto.'));
     }
   }
 
@@ -296,8 +285,8 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
         assuntoId: data.assuntoId,
         subassunto: data.subassunto,
       });
-    } catch (e: any) {
-      setErro(e?.response?.data?.detail || e?.response?.data?.message || 'Não foi possível cadastrar a questão.');
+    } catch (error: unknown) {
+      setErro(getApiErrorMessage(error, 'Não foi possível cadastrar a questão.'));
     }
   }
 

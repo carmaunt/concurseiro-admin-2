@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { api } from '@/services/api';
+import { api, getApiErrorMessage } from '@/services/api';
 import { getCurrentUserRole } from '@/services/auth';
 import type { ApiResponse, QuestaoListItem, QuestoesPageData } from '@/types/api';
 import {
@@ -104,7 +104,7 @@ export default function QuestoesPage() {
   }
 
   if (isError) {
-    return <Alert severity="error">{(error as any)?.response?.data?.message || 'Não foi possível carregar as questões.'}</Alert>;
+    return <Alert severity="error">{getApiErrorMessage(error, 'Não foi possível carregar as questões.')}</Alert>;
   }
 
   return (

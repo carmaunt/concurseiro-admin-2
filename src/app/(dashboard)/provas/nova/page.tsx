@@ -13,8 +13,9 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { api } from '@/services/api';
+import { api, getApiErrorMessage, getApiErrorStatus } from '@/services/api';
 import type { CatalogoItem } from '@/types/api';
+import { arrayOf, dataOf, numberProp, stringProp } from '@/utils/unknown';
 
 type FormData = {
   banca: string;
@@ -29,12 +30,11 @@ type FormData = {
 
 const NOVO_VALOR = '__new__';
 
-function normalizarLista(data: any): CatalogoItem[] {
-  const arr = Array.isArray(data) ? data : data?.data ?? [];
-  return arr
-    .map((x: any) => ({
-      id: x.id ?? x.idBanca ?? x.idInstituicao,
-      nome: x.nome ?? x.name,
+function normalizarLista(data: unknown): CatalogoItem[] {
+  return arrayOf(data)
+    .map((x) => ({
+      id: numberProp(x, ['id', 'idBanca', 'idInstituicao']),
+      nome: stringProp(x, ['nome', 'name']),
     }))
     .filter((x: CatalogoItem) => x.id != null && x.nome);
 }
@@ -101,16 +101,16 @@ export default function NovaProvaPage() {
         : '/api/v1/admin/catalogo/instituicoes';
 
     const res = await api.post(path, { nome: nomeLimpo });
-    const created = res.data?.data ?? res.data;
+    const created = dataOf<unknown>(res.data);
 
-    const id = created?.id ?? created?.idBanca ?? created?.idInstituicao;
-    const nomeResp = created?.nome ?? nomeLimpo;
+    const id = numberProp(created, ['id', 'idBanca', 'idInstituicao']);
+    const nomeResp = stringProp(created, ['nome'], nomeLimpo);
 
-    if (id == null) {
+    if (!Number.isFinite(id)) {
       throw new Error('O backend não retornou o id do item criado.');
     }
 
-    return { id, nome: nomeResp } as CatalogoItem;
+    return { id, nome: nomeResp };
   }
 
   const handleInlineCreate = async (tipo: 'banca' | 'instituicao') => {
@@ -138,13 +138,8 @@ export default function NovaProvaPage() {
         instituicaoId: String(created.id),
         novaInstituicao: '',
       }));
-    } catch (error: any) {
-      setErro(
-        error?.response?.data?.message ||
-          error?.response?.data?.detail ||
-          error?.message ||
-          'Erro ao criar item do catálogo.'
-      );
+    } catch (error: unknown) {
+      setErro(getApiErrorMessage(error, error instanceof Error ? error.message : 'Erro ao criar item do catálogo.'));
     } finally {
       setSavingInline(null);
     }
@@ -178,23 +173,22 @@ export default function NovaProvaPage() {
       });
 
       router.push('/provas');
-    } catch (error: any) {
-      const status = error?.response?.status;
-      const detail = error?.response?.data?.detail;
-      const message = error?.response?.data?.message;
+    } catch (error: unknown) {
+      const status = getApiErrorStatus(error);
+      const message = getApiErrorMessage(error);
 
       if (status === 409) {
-        setErro(detail || 'Já existe uma prova cadastrada com esse cabeçalho.');
+        setErro(message || 'Já existe uma prova cadastrada com esse cabeçalho.');
         return;
       }
 
       if (status === 404) {
-        setErro(detail || message || 'Instituição ou banca não encontrada no catálogo.');
+        setErro(message || 'Instituição ou banca não encontrada no catálogo.');
         return;
       }
 
       if (status === 400) {
-        setErro(detail || message || 'Dados inválidos para cadastro da prova.');
+        setErro(message || 'Dados inválidos para cadastro da prova.');
         return;
       }
 

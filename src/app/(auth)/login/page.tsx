@@ -56,7 +56,7 @@ export default function LoginPage() {
       saveAuthSession({ email, role });
 
       router.push('/questoes');
-    } catch (error: any) {
+    } catch (error: unknown) {
       const status = getApiErrorStatus(error);
 
       if (status === 401) {

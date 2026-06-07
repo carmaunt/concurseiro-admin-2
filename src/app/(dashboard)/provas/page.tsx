@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/services/api';
+import { api, getApiErrorMessage } from '@/services/api';
 import {
   Alert,
   Box,
@@ -33,6 +33,7 @@ import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import { useRouter } from 'next/navigation';
 import { getCurrentUserRole } from '@/services/auth';
 import type { ApiResponse, OptionalPageResponse, ProvaListItem, ProvasPageData, QuestaoListItem } from '@/types/api';
+import { dataOf, prop } from '@/utils/unknown';
 
 function renderSimpleMarkdown(text: string | null | undefined): string {
   if (!text) return '';
@@ -93,8 +94,10 @@ export default function ProvasPage() {
         };
       }
 
-      if (Array.isArray((res.data as any)?.data)) {
-        const list = (res.data as any).data as ProvaListItem[];
+      const directData = prop(res.data, 'data');
+
+      if (Array.isArray(directData)) {
+        const list = directData as ProvaListItem[];
         return {
           content: list,
           page: {
@@ -118,11 +121,8 @@ export default function ProvasPage() {
       queryClient.invalidateQueries({ queryKey: ['provas'] });
       setProvaSelecionada(null);
     },
-    onError: (error: any) => {
-      alert(
-        error?.response?.data?.message ||
-        'Não foi possível excluir a prova.'
-      );
+    onError: (error: unknown) => {
+      alert(getApiErrorMessage(error, 'Não foi possível excluir a prova.'));
     },
   });
 
@@ -167,21 +167,17 @@ export default function ProvasPage() {
 
       if (Array.isArray(res.data)) {
         lista = res.data;
-      } else if (Array.isArray((res.data as any)?.content)) {
+      } else if (Array.isArray(prop(res.data, 'content'))) {
         lista = (res.data as OptionalPageResponse<QuestaoListItem>).content;
-      } else if (Array.isArray((res.data as any)?.data?.content)) {
-        lista = (res.data as any).data.content;
-      } else if (Array.isArray((res.data as any)?.data)) {
-        lista = (res.data as any).data;
+      } else if (Array.isArray(prop(dataOf<unknown>(res.data), 'content'))) {
+        lista = prop(dataOf<unknown>(res.data), 'content') as QuestaoListItem[];
+      } else if (Array.isArray(dataOf<unknown>(res.data))) {
+        lista = dataOf<QuestaoListItem[]>(res.data);
       }
 
       setQuestoesDaProva(lista.filter((q) => q.provaId === prova.id));
-    } catch (error: any) {
-      setErroQuestoes(
-        error?.response?.data?.detail ||
-        error?.response?.data?.message ||
-        'Não foi possível carregar as questões da prova.'
-      );
+    } catch (error: unknown) {
+      setErroQuestoes(getApiErrorMessage(error, 'Não foi possível carregar as questões da prova.'));
     } finally {
       setLoadingQuestoes(false);
     }
@@ -208,7 +204,7 @@ export default function ProvasPage() {
   if (isError) {
     return (
       <Alert severity="error">
-        {(error as any)?.response?.data?.message || 'Não foi possível carregar as provas.'}
+        {getApiErrorMessage(error, 'Não foi possível carregar as provas.')}
       </Alert>
     );
   }
@@ -609,9 +605,9 @@ export default function ProvasPage() {
                                     </Typography>
                                   </Stack>
 
-                                  {('subassunto' in questao) && (questao as any).subassunto && (
+                                  {questao.subassunto && (
                                     <Typography variant="body2" sx={{ color: '#64748b' }}>
-                                      <strong>Subassunto:</strong> {(questao as any).subassunto}
+                                      <strong>Subassunto:</strong> {questao.subassunto}
                                     </Typography>
                                   )}
                                 </Stack>

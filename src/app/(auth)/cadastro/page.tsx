@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import { api } from '@/services/api';
+import { api, getApiErrorStatus } from '@/services/api';
 
 type FormData = {
   nome: string;
@@ -60,8 +60,8 @@ export default function CadastroPage() {
       setTimeout(() => {
         router.push('/login');
       }, 1800);
-    } catch (error: any) {
-      const status = error?.response?.status;
+    } catch (error: unknown) {
+      const status = getApiErrorStatus(error);
 
       if (status === 400) {
         setErro('Dados inválidos ou email já cadastrado.');
