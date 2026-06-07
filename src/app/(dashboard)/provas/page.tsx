@@ -11,8 +11,10 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogTitle,
   IconButton,
   Paper,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -70,6 +72,8 @@ export default function ProvasPage() {
   const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null);
   const [respondeu, setRespondeu] = useState(false);
   const [questaoEmResolucao, setQuestaoEmResolucao] = useState<string | null>(null);
+  const [provaParaExcluir, setProvaParaExcluir] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['provas', page, size],
@@ -120,9 +124,14 @@ export default function ProvasPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['provas'] });
       setProvaSelecionada(null);
+      setProvaParaExcluir(null);
+      setFeedback({ type: 'success', message: 'Prova excluída com sucesso.' });
     },
     onError: (error: unknown) => {
-      alert(getApiErrorMessage(error, 'Não foi possível excluir a prova.'));
+      setFeedback({
+        type: 'error',
+        message: getApiErrorMessage(error, 'Não foi possível excluir a prova.'),
+      });
     },
   });
 
@@ -184,13 +193,12 @@ export default function ProvasPage() {
   };
 
   const handleExcluir = (id: number) => {
-    const confirmou = window.confirm(
-      'Tem certeza que deseja excluir esta prova? Essa ação não pode ser desfeita.'
-    );
+    setProvaParaExcluir(id);
+  };
 
-    if (!confirmou) return;
-
-    deletarProva.mutate(id);
+  const confirmarExclusao = () => {
+    if (!provaParaExcluir) return;
+    deletarProva.mutate(provaParaExcluir);
   };
 
   if (isLoading) {
@@ -834,6 +842,51 @@ export default function ProvasPage() {
           </>
         )}
       </Dialog>
+
+      <Dialog
+        open={Boolean(provaParaExcluir)}
+        onClose={() => !deletarProva.isPending && setProvaParaExcluir(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>Excluir prova?</DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            Essa ação não pode ser desfeita.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setProvaParaExcluir(null)}
+            disabled={deletarProva.isPending}
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmarExclusao}
+            disabled={deletarProva.isPending}
+            sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
+          >
+            Excluir
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={Boolean(feedback)}
+        autoHideDuration={4000}
+        onClose={() => setFeedback(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        {feedback ? (
+          <Alert severity={feedback.type} onClose={() => setFeedback(null)} sx={{ width: '100%' }}>
+            {feedback.message}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
     </Box>
   );
 }

@@ -15,8 +15,10 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogTitle,
   IconButton,
   Paper,
+  Snackbar,
   Stack,
   Table,
   TableBody,
@@ -53,6 +55,8 @@ export default function QuestoesPage() {
   const [respostaSelecionada, setRespostaSelecionada] = useState<string | null>(null);
   const [respondeu, setRespondeu] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [questaoParaExcluir, setQuestaoParaExcluir] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
     setUserRole(getCurrentUserRole());
@@ -75,6 +79,14 @@ export default function QuestoesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['questoes'] });
       setQuestaoSelecionada(null);
+      setQuestaoParaExcluir(null);
+      setFeedback({ type: 'success', message: 'Questão excluída com sucesso.' });
+    },
+    onError: (error: unknown) => {
+      setFeedback({
+        type: 'error',
+        message: getApiErrorMessage(error, 'Não foi possível excluir a questão.'),
+      });
     },
   });
 
@@ -85,8 +97,12 @@ export default function QuestoesPage() {
   const isAdmin = userRole === 'ADMIN';
 
   const handleExcluir = (idQuestion: string) => {
-    const confirmou = window.confirm('Tem certeza que deseja excluir esta questão? Essa ação não pode ser desfeita.');
-    if (confirmou) excluirQuestao.mutate(idQuestion);
+    setQuestaoParaExcluir(idQuestion);
+  };
+
+  const confirmarExclusao = () => {
+    if (!questaoParaExcluir) return;
+    excluirQuestao.mutate(questaoParaExcluir);
   };
 
   const abrirQuestao = (questao: QuestaoListItem) => {
@@ -317,6 +333,51 @@ export default function QuestoesPage() {
           </>
         )}
       </Dialog>
+
+      <Dialog
+        open={Boolean(questaoParaExcluir)}
+        onClose={() => !excluirQuestao.isPending && setQuestaoParaExcluir(null)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>Excluir questão?</DialogTitle>
+        <DialogContent>
+          <Typography color="text.secondary">
+            Essa ação não pode ser desfeita.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setQuestaoParaExcluir(null)}
+            disabled={excluirQuestao.isPending}
+            sx={{ textTransform: 'none', fontWeight: 700 }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmarExclusao}
+            disabled={excluirQuestao.isPending}
+            sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
+          >
+            Excluir
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar
+        open={Boolean(feedback)}
+        autoHideDuration={4000}
+        onClose={() => setFeedback(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        {feedback ? (
+          <Alert severity={feedback.type} onClose={() => setFeedback(null)} sx={{ width: '100%' }}>
+            {feedback.message}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
     </Box>
   );
 }
