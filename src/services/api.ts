@@ -1,6 +1,6 @@
 // src/services/api.ts
 import axios from 'axios';
-import { clearAuthSession, getStoredAccessToken } from './auth';
+import { clearAuthSession } from './auth';
 
 const PUBLIC_AUTH_PATHS = ['/login', '/cadastro'];
 
@@ -12,6 +12,7 @@ type ApiErrorPayload = {
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true,
 });
 
 function isBrowser() {
@@ -42,18 +43,6 @@ export function getApiErrorMessage(error: unknown, fallback = 'Não foi possíve
 
   return fallback;
 }
-
-api.interceptors.request.use((config) => {
-  if (!isBrowser()) return config;
-
-  const token = getStoredAccessToken();
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-
-  return config;
-});
 
 api.interceptors.response.use(
   (response) => response,

@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useRouter, usePathname } from 'next/navigation';
+import { api } from '@/services/api';
 import { clearAuthSession, getCurrentUserRole } from '@/services/auth';
 
 const drawerWidth = 240;
@@ -38,7 +39,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     setMobileOpen(false);
   }, [pathname]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await api.post('/api/v1/auth/logout').catch(() => undefined);
     clearAuthSession();
     router.push('/login');
   };

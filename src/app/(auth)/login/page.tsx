@@ -45,16 +45,15 @@ export default function LoginPage() {
         senha: data.senha,
       });
 
-      const accessToken = response.data?.data?.accessToken;
-      const refreshToken = response.data?.data?.refreshToken;
       const email = response.data?.data?.email;
+      const role = response.data?.data?.role;
 
-      if (!accessToken) {
-        setErro('Token não encontrado na resposta.');
+      if (!email || !role) {
+        setErro('Dados de sessão não encontrados na resposta.');
         return;
       }
 
-      saveAuthSession({ accessToken, refreshToken, email });
+      saveAuthSession({ email, role });
 
       router.push('/questoes');
     } catch (error: any) {
