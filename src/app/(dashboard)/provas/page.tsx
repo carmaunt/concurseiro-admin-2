@@ -2,56 +2,21 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, getApiErrorMessage } from '@/services/api';
-import {
-  Alert,
-  Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  IconButton,
-  Paper,
-  Snackbar,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TablePagination,
-  TableRow,
-  Tooltip,
-  Typography,
-} from '@mui/material';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined';
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
-import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import { useRouter } from 'next/navigation';
-import { SafeMarkdown } from '@/components/content/SafeMarkdown';
+import { Alert, Box, Button, CircularProgress, Snackbar, Stack, Typography } from '@mui/material';
+import { ProvaDeleteDialog } from '@/components/provas/ProvaDeleteDialog';
+import { ProvaDetalheDialog } from '@/components/provas/ProvaDetalheDialog';
+import { ProvasStats } from '@/components/provas/ProvasStats';
+import { ProvasTable } from '@/components/provas/ProvasTable';
+import { api, getApiErrorMessage } from '@/services/api';
 import { getCurrentUserRole } from '@/services/auth';
 import type { ApiResponse, OptionalPageResponse, ProvaListItem, ProvasPageData, QuestaoListItem } from '@/types/api';
 import { dataOf, prop } from '@/utils/unknown';
-
-function isGabaritoAnulada(gabarito: string | null | undefined) {
-  const normalizado = String(gabarito || '').toUpperCase();
-  return normalizado === 'X' || normalizado === 'ANULADA';
-}
 
 export default function ProvasPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [userRole, setUserRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    setUserRole(getCurrentUserRole());
-  }, []);
-
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
   const [provaSelecionada, setProvaSelecionada] = useState<ProvaListItem | null>(null);
@@ -63,6 +28,10 @@ export default function ProvasPage() {
   const [questaoEmResolucao, setQuestaoEmResolucao] = useState<string | null>(null);
   const [provaParaExcluir, setProvaParaExcluir] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    setUserRole(getCurrentUserRole());
+  }, []);
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['provas', page, size],
@@ -124,7 +93,7 @@ export default function ProvasPage() {
     },
   });
 
-  const provas = data?.content ?? [];
+  const provas = useMemo(() => data?.content ?? [], [data?.content]);
 
   const stats = useMemo(() => {
     const total = provas.length;
@@ -179,10 +148,6 @@ export default function ProvasPage() {
     } finally {
       setLoadingQuestoes(false);
     }
-  };
-
-  const handleExcluir = (id: number) => {
-    setProvaParaExcluir(id);
   };
 
   const confirmarExclusao = () => {
@@ -240,616 +205,50 @@ export default function ProvasPage() {
           </Button>
         </Stack>
 
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <Paper
-            elevation={0}
-            sx={{
-              flex: 1,
-              p: 2.5,
-              borderRadius: 3,
-              border: '1px solid #e8edf3',
-              bgcolor: '#fff',
-            }}
-          >
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <DescriptionOutlinedIcon color="primary" />
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Total
-                </Typography>
-                <Typography variant="h5" fontWeight={700}>
-                  {stats.total}
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
+        <ProvasStats stats={stats} />
 
-          <Paper
-            elevation={0}
-            sx={{
-              flex: 1,
-              p: 2.5,
-              borderRadius: 3,
-              border: '1px solid #e8edf3',
-              bgcolor: '#fff',
-            }}
-          >
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <AccountBalanceOutlinedIcon color="primary" />
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Bancas
-                </Typography>
-                <Typography variant="h5" fontWeight={700}>
-                  {stats.bancas}
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
-
-          <Paper
-            elevation={0}
-            sx={{
-              flex: 1,
-              p: 2.5,
-              borderRadius: 3,
-              border: '1px solid #e8edf3',
-              bgcolor: '#fff',
-            }}
-          >
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <SchoolOutlinedIcon color="primary" />
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Instituições
-                </Typography>
-                <Typography variant="h5" fontWeight={700}>
-                  {stats.instituicoes}
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
-
-          <Paper
-            elevation={0}
-            sx={{
-              flex: 1,
-              p: 2.5,
-              borderRadius: 3,
-              border: '1px solid #e8edf3',
-              bgcolor: '#fff',
-            }}
-          >
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <CalendarTodayOutlinedIcon color="primary" />
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Anos
-                </Typography>
-                <Typography variant="h5" fontWeight={700}>
-                  {stats.anos}
-                </Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        </Stack>
-
-        <Paper
-          elevation={0}
-          sx={{
-            borderRadius: 4,
-            border: '1px solid #e8edf3',
-            overflow: 'hidden',
-            bgcolor: '#fff',
+        <ProvasTable
+          provas={provas}
+          totalElements={totalElements}
+          pageAtual={pageAtual}
+          sizeAtual={sizeAtual}
+          isAdmin={isAdmin}
+          isDeleting={deletarProva.isPending}
+          onView={handleVisualizarProva}
+          onAddQuestion={(provaId) => router.push(`/provas/${provaId}/questoes/nova`)}
+          onDelete={setProvaParaExcluir}
+          onPageChange={setPage}
+          onRowsPerPageChange={(nextSize) => {
+            setSize(nextSize);
+            setPage(0);
           }}
-        >
-          <Box sx={{ p: 3, borderBottom: '1px solid #eef2f7' }}>
-            <Typography variant="h6" fontWeight={700}>
-              Lista de provas
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Exibindo banca, instituição, ano e modalidade.
-            </Typography>
-          </Box>
-
-          <Table>
-            <TableHead>
-              <TableRow sx={{ bgcolor: '#fafbfc' }}>
-                <TableCell sx={{ width: '25%' }}>
-                  <strong>Instituição</strong>
-                </TableCell>
-                <TableCell sx={{ width: '15%' }}>
-                  <strong>Banca</strong>
-                </TableCell>
-                <TableCell sx={{ width: '10%' }}>
-                  <strong>Ano</strong>
-                </TableCell>
-                <TableCell sx={{ width: '20%' }}>
-                  <strong>Modalidade</strong>
-                </TableCell>
-                <TableCell sx={{ width: '10%' }}>
-                  <strong>Questões</strong>
-                </TableCell>
-                <TableCell align="right" sx={{ width: '20%' }}>
-                  <strong>Ações</strong>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {provas.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-                    <Typography color="text.secondary">Nenhuma prova encontrada.</Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                provas.map((prova) => (
-                  <TableRow key={prova.id} hover>
-                    <TableCell>{prova.instituicao}</TableCell>
-                    <TableCell>{prova.banca}</TableCell>
-                    <TableCell>{prova.ano}</TableCell>
-                    <TableCell>
-                      {prova.modalidade === 'CERTO_ERRADO'
-                        ? 'CERTO ERRADO'
-                        : prova.modalidade === 'A_E' || prova.modalidade === 'A_D'
-                        ? 'MULTIPLA ESCOLHA'
-                        : prova.modalidade}
-                    </TableCell>
-                    <TableCell>{prova.totalQuestoes ?? 0}</TableCell>
-                    <TableCell align="right">
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <Tooltip title="Ver prova completa">
-                          <IconButton color="primary" onClick={() => handleVisualizarProva(prova)}>
-                            <VisibilityOutlinedIcon />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Adicionar questão nesta prova">
-                          <IconButton
-                            color="success"
-                            onClick={() => router.push(`/provas/${prova.id}/questoes/nova`)}
-                          >
-                            <AddCircleOutlineIcon />
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title={isAdmin ? 'Excluir prova' : 'Apenas administradores podem excluir provas'}>
-                          <span>
-                            <IconButton
-                              color="error"
-                              onClick={() => handleExcluir(prova.id)}
-                              disabled={!isAdmin || deletarProva.isPending}
-                            >
-                              <DeleteOutlineIcon />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                      </Stack>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-
-          {provas.length > 0 && (
-            <TablePagination
-              component="div"
-              count={totalElements}
-              page={pageAtual}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              rowsPerPage={sizeAtual}
-              onRowsPerPageChange={(event) => {
-                setSize(Number(event.target.value));
-                setPage(0);
-              }}
-              rowsPerPageOptions={[10, 20, 50]}
-              labelRowsPerPage="Itens por página"
-            />
-          )}
-        </Paper>
+        />
       </Stack>
 
-      <Dialog
-        open={Boolean(provaSelecionada)}
+      <ProvaDetalheDialog
+        prova={provaSelecionada}
+        questoes={questoesDaProva}
+        loadingQuestoes={loadingQuestoes}
+        erroQuestoes={erroQuestoes}
+        respostaSelecionada={respostaSelecionada}
+        respondeu={respondeu}
+        questaoEmResolucao={questaoEmResolucao}
         onClose={() => setProvaSelecionada(null)}
-        fullWidth
-        maxWidth="md"
-        PaperProps={{
-          sx: {
-            borderRadius: 4,
-            overflow: 'hidden',
-            boxShadow: '0 24px 80px rgba(15, 23, 42, 0.18)',
-            backgroundColor: '#f8fafc',
-          },
+        onSelecionarQuestao={setQuestaoEmResolucao}
+        onSelecionarResposta={setRespostaSelecionada}
+        onResponder={() => {
+          if (!questaoEmResolucao || !respostaSelecionada) return;
+          setRespondeu(true);
         }}
-      >
-        {provaSelecionada && (
-          <>
-            <DialogContent sx={{ p: 3, pt: 4, backgroundColor: '#f8fafc' }}>
-              <Paper
-                elevation={0}
-                sx={{
-                  borderRadius: 3,
-                  border: '1px solid #e5e7eb',
-                  overflow: 'hidden',
-                  backgroundColor: '#fff',
-                }}
-              >
-                <Box sx={{ p: 3 }}>
-                  <Stack spacing={2.5}>
-                    <Stack
-                      direction={{ xs: 'column', md: 'row' }}
-                      spacing={1.5}
-                      justifyContent="space-between"
-                      alignItems={{ xs: 'flex-start', md: 'center' }}
-                    >
-                      <Typography variant="h6" fontWeight={800} sx={{ color: '#334155' }}>
-                        {provaSelecionada.instituicao}
-                      </Typography>
+        onResetResposta={() => setRespondeu(false)}
+      />
 
-                      <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 600 }}>
-                        Prova #{provaSelecionada.id}
-                      </Typography>
-                    </Stack>
-
-                    <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap" sx={{ color: '#475569' }}>
-                      <Typography variant="body2">
-                        <Box component="span" sx={{ fontWeight: 700 }}>
-                          Banca:
-                        </Box>{' '}
-                        {provaSelecionada.banca}
-                      </Typography>
-
-                      <Typography variant="body2">
-                        <Box component="span" sx={{ fontWeight: 700 }}>
-                          Ano:
-                        </Box>{' '}
-                        {provaSelecionada.ano}
-                      </Typography>
-
-                      <Typography variant="body2">
-                        <Box component="span" sx={{ fontWeight: 700 }}>
-                          Modalidade:
-                        </Box>{' '}
-                        {provaSelecionada.modalidade}
-                      </Typography>
-
-                      {provaSelecionada.nivel && (
-                        <Typography variant="body2">
-                          <Box component="span" sx={{ fontWeight: 700 }}>
-                            Nível:
-                          </Box>{' '}
-                          {provaSelecionada.nivel}
-                        </Typography>
-                      )}
-
-                      {provaSelecionada.cargo && (
-                        <Typography variant="body2">
-                          <Box component="span" sx={{ fontWeight: 700 }}>
-                            Cargo:
-                          </Box>{' '}
-                          {provaSelecionada.cargo}
-                        </Typography>
-                      )}
-
-                      {typeof provaSelecionada.totalQuestoes === 'number' && (
-                        <Typography variant="body2">
-                          <Box component="span" sx={{ fontWeight: 700 }}>
-                            Questões:
-                          </Box>{' '}
-                          {provaSelecionada.totalQuestoes}
-                        </Typography>
-                      )}
-                    </Stack>
-
-                    <Box>
-                      <Typography variant="h6" fontWeight={800} sx={{ color: '#334155', mb: 2 }}>
-                        Questões cadastradas
-                      </Typography>
-
-                      {loadingQuestoes && (
-                        <Box display="flex" justifyContent="center" py={4}>
-                          <CircularProgress />
-                        </Box>
-                      )}
-
-                      {!loadingQuestoes && erroQuestoes && (
-                        <Alert severity="error" sx={{ borderRadius: 2 }}>
-                          {erroQuestoes}
-                        </Alert>
-                      )}
-
-                      {!loadingQuestoes && !erroQuestoes && questoesDaProva.length === 0 && (
-                        <Paper
-                          elevation={0}
-                          sx={{
-                            p: 2.5,
-                            borderRadius: 3,
-                            border: '1px solid #e5e7eb',
-                            backgroundColor: '#fcfcfd',
-                          }}
-                        >
-                          <Typography sx={{ color: '#64748b', fontWeight: 600 }}>
-                            Nenhuma questão cadastrada para esta prova.
-                          </Typography>
-                        </Paper>
-                      )}
-
-                      {!loadingQuestoes && !erroQuestoes && questoesDaProva.length > 0 && (
-                        <Stack spacing={2}>
-                          {questoesDaProva.map((questao) => (
-                            <Paper
-                              key={questao.idQuestion}
-                              elevation={0}
-                              sx={{
-                                p: 2.5,
-                                borderRadius: 3,
-                                border: '1px solid #e5e7eb',
-                                backgroundColor: '#fcfcfd',
-                              }}
-                            >
-                              <Stack spacing={1.25}>
-                                <Stack spacing={0.5} alignItems="flex-start">
-                                  <Stack direction="row" spacing={3} flexWrap="wrap">
-                                    <Typography variant="body2" sx={{ color: '#64748b' }}>
-                                      <strong>Disciplina:</strong> {questao.disciplina}
-                                    </Typography>
-
-                                    <Typography variant="body2" sx={{ color: '#64748b' }}>
-                                      <strong>Assunto:</strong> {questao.assunto}
-                                    </Typography>
-                                  </Stack>
-
-                                  {questao.subassunto && (
-                                    <Typography variant="body2" sx={{ color: '#64748b' }}>
-                                      <strong>Subassunto:</strong> {questao.subassunto}
-                                    </Typography>
-                                  )}
-                                </Stack>
-
-                                <SafeMarkdown value={questao.enunciado} sx={{ color: '#374151' }} />
-
-                                <SafeMarkdown value={questao.questao} sx={{ color: '#374151' }} />
-
-                                {isGabaritoAnulada(questao.gabarito) && (
-                                  <Alert severity="warning" sx={{ borderRadius: 2 }}>Questão anulada.</Alert>
-                                )}
-
-                                <Stack spacing={1.5}>
-                                  {(questao.alternativas || 'C) CERTO\nE) ERRADO')
-                                    .split('\n')
-                                    .filter((item) => item.trim())
-                                    .map((alternativa, index) => {
-                                      const letra = alternativa.trim().charAt(0).replace(')', '');
-                                      const isAnulada = isGabaritoAnulada(questao.gabarito);
-                                      const isSelecionada =
-                                        questaoEmResolucao === questao.idQuestion && respostaSelecionada === letra;
-
-                                      const gabaritoNormalizado =
-                                        String(questao.gabarito).toUpperCase() === 'ERRADO'
-                                          ? 'E'
-                                          : String(questao.gabarito).toUpperCase() === 'CERTO'
-                                          ? 'C'
-                                          : String(questao.gabarito).toUpperCase();
-
-                                      const isCorreta = !isAnulada && letra.toUpperCase() === gabaritoNormalizado;
-
-                                      const respondeuQuestao =
-                                        questaoEmResolucao === questao.idQuestion && respondeu;
-
-                                      return (
-                                        <Box
-                                          key={`${letra}-${index}`}
-                                          onClick={() => {
-                                            if (respondeuQuestao) return;
-
-                                            if (questaoEmResolucao !== questao.idQuestion) {
-                                              setQuestaoEmResolucao(questao.idQuestion);
-                                              setRespostaSelecionada(letra);
-                                              setRespondeu(false);
-                                              return;
-                                            }
-
-                                            setRespostaSelecionada(letra);
-                                          }}
-                                          sx={{
-                                            p: 2,
-                                            borderRadius: 3,
-                                            border: respondeuQuestao && !isAnulada
-                                              ? isCorreta
-                                                ? '2px solid #16a34a'
-                                                : isSelecionada
-                                                ? '2px solid #dc2626'
-                                                : '1px solid #e5e7eb'
-                                              : isSelecionada
-                                              ? '2px solid #2563eb'
-                                              : '1px solid #e5e7eb',
-                                            backgroundColor: respondeuQuestao && !isAnulada
-                                              ? isCorreta
-                                                ? '#dcfce7'
-                                                : isSelecionada
-                                                ? '#fee2e2'
-                                                : '#fff'
-                                              : isSelecionada
-                                              ? '#eff6ff'
-                                              : '#fff',
-                                            display: 'flex',
-                                            alignItems: 'flex-start',
-                                            gap: 1.5,
-                                            cursor: respondeuQuestao ? 'default' : 'pointer',
-                                            transition: 'all 0.2s ease',
-                                            '&:hover': respondeuQuestao
-                                              ? {}
-                                              : {
-                                                  borderColor: '#2563eb',
-                                                  backgroundColor: '#f1f5f9',
-                                                },
-                                          }}
-                                        >
-                                          <Box
-                                            sx={{
-                                              width: 22,
-                                              height: 22,
-                                              minWidth: 22,
-                                              borderRadius: '50%',
-                                              border: respondeuQuestao && !isAnulada
-                                                ? isCorreta
-                                                  ? '2px solid #16a34a'
-                                                  : isSelecionada
-                                                  ? '2px solid #dc2626'
-                                                  : '2px solid #cbd5e1'
-                                                : isSelecionada
-                                                ? '2px solid #2563eb'
-                                                : '2px solid #cbd5e1',
-                                              mt: '2px',
-                                              position: 'relative',
-                                              '&::after':
-                                                (respondeuQuestao && !isAnulada && (isCorreta || isSelecionada)) ||
-                                                (!respondeuQuestao && isSelecionada) ||
-                                                (respondeuQuestao && isAnulada && isSelecionada)
-                                                  ? {
-                                                      content: '""',
-                                                      position: 'absolute',
-                                                      inset: 4,
-                                                      borderRadius: '50%',
-                                                      backgroundColor: respondeuQuestao && !isAnulada
-                                                        ? isCorreta
-                                                          ? '#16a34a'
-                                                          : '#dc2626'
-                                                        : '#2563eb',
-                                                    }
-                                                  : undefined,
-                                            }}
-                                          />
-
-                                          <Box sx={{ flex: 1 }}>
-                                            <SafeMarkdown
-                                              value={alternativa}
-                                              variant="body1"
-                                              sx={{
-                                                fontWeight: 400,
-                                                color: '#374151',
-                                                lineHeight: 1.7,
-                                              }}
-                                            />
-                                          </Box>
-                                        </Box>
-                                      );
-                                    })}
-                                </Stack>
-
-                                <Stack
-                                  direction={{ xs: 'column', sm: 'row' }}
-                                  spacing={1.5}
-                                  alignItems={{ xs: 'flex-start', sm: 'center' }}
-                                  pt={1}
-                                >
-                                  <Button
-                                    variant="contained"
-                                    disableElevation
-                                    onClick={() => {
-                                      if (questaoEmResolucao !== questao.idQuestion) return;
-                                      if (!respostaSelecionada) return;
-                                      setRespondeu(true);
-                                    }}
-                                    sx={{
-                                      textTransform: 'none',
-                                      fontWeight: 700,
-                                      borderRadius: 2,
-                                      px: 2.5,
-                                      backgroundColor: '#2563eb',
-                                    }}
-                                  >
-                                    Responder
-                                  </Button>
-
-                                  <Button
-                                    variant="text"
-                                    onClick={() => {
-                                      setQuestaoEmResolucao(questao.idQuestion);
-                                      setRespostaSelecionada(null);
-                                      setRespondeu(false);
-                                    }}
-                                    sx={{
-                                      textTransform: 'none',
-                                      fontWeight: 700,
-                                      color: '#64748b',
-                                    }}
-                                  >
-                                    Limpar
-                                  </Button>
-                                </Stack>
-                              </Stack>
-                            </Paper>
-                          ))}
-                        </Stack>
-                      )}
-                    </Box>
-                  </Stack>
-                </Box>
-              </Paper>
-            </DialogContent>
-
-            <DialogActions
-              sx={{
-                px: 3,
-                py: 2,
-                borderTop: '1px solid #e5e7eb',
-                backgroundColor: '#fff',
-                justifyContent: 'flex-end',
-              }}
-            >
-              <Button
-                variant="contained"
-                onClick={() => setProvaSelecionada(null)}
-                sx={{
-                  borderRadius: 2,
-                  px: 2.5,
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  boxShadow: 'none',
-                }}
-              >
-                Fechar
-              </Button>
-            </DialogActions>
-          </>
-        )}
-      </Dialog>
-
-      <Dialog
+      <ProvaDeleteDialog
         open={Boolean(provaParaExcluir)}
-        onClose={() => !deletarProva.isPending && setProvaParaExcluir(null)}
-        fullWidth
-        maxWidth="xs"
-      >
-        <DialogTitle sx={{ fontWeight: 800 }}>Excluir prova?</DialogTitle>
-        <DialogContent>
-          <Typography color="text.secondary">
-            Essa ação não pode ser desfeita.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => setProvaParaExcluir(null)}
-            disabled={deletarProva.isPending}
-            sx={{ textTransform: 'none', fontWeight: 700 }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={confirmarExclusao}
-            disabled={deletarProva.isPending}
-            sx={{ textTransform: 'none', fontWeight: 700, boxShadow: 'none' }}
-          >
-            Excluir
-          </Button>
-        </DialogActions>
-      </Dialog>
+        isDeleting={deletarProva.isPending}
+        onClose={() => setProvaParaExcluir(null)}
+        onConfirm={confirmarExclusao}
+      />
 
       <Snackbar
         open={Boolean(feedback)}

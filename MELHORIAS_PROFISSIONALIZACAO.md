@@ -37,7 +37,7 @@ Backend: `/home/mauricio/concurseiro-api`
 
 ## Prioridade 3 - Arquitetura do frontend
 
-- [ ] Separar paginas grandes em componentes menores por dominio.
+- [x] Separar paginas grandes em componentes menores por dominio.
 - [ ] Criar camada de servicos por dominio: auth, questoes, provas, usuarios e catalogo.
 - [ ] Criar hooks de dados por dominio usando React Query.
 - [ ] Padronizar layouts de listagem, estados vazios, loading, erro e acoes destrutivas.
