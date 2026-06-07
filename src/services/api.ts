@@ -1,8 +1,8 @@
 // src/services/api.ts
 import axios from 'axios';
+import { clearAuthSession, getStoredAccessToken } from './auth';
 
 const PUBLIC_AUTH_PATHS = ['/login', '/cadastro'];
-const SESSION_STORAGE_KEYS = ['token', 'refreshToken', 'userEmail', 'userRole'];
 
 type ApiErrorPayload = {
   detail?: unknown;
@@ -16,12 +16,6 @@ export const api = axios.create({
 
 function isBrowser() {
   return typeof window !== 'undefined';
-}
-
-function clearStoredSession() {
-  if (!isBrowser()) return;
-
-  SESSION_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
 }
 
 function shouldRedirectToLogin() {
@@ -52,7 +46,7 @@ export function getApiErrorMessage(error: unknown, fallback = 'Não foi possíve
 api.interceptors.request.use((config) => {
   if (!isBrowser()) return config;
 
-  const token = localStorage.getItem('token');
+  const token = getStoredAccessToken();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -65,7 +59,7 @@ api.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
     if (getApiErrorStatus(error) === 401) {
-      clearStoredSession();
+      clearAuthSession();
 
       if (shouldRedirectToLogin()) {
         window.location.assign('/login');

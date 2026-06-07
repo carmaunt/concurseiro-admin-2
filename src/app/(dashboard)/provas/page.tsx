@@ -31,6 +31,7 @@ import CalendarTodayOutlinedIcon from '@mui/icons-material/CalendarTodayOutlined
 import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
 import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
 import { useRouter } from 'next/navigation';
+import { getCurrentUserRole } from '@/services/auth';
 
 type ProvaListItem = {
   id: number;
@@ -94,20 +95,6 @@ type ApiResponse<T> = {
   path: string;
 };
 
-function getRoleFromToken(token: string | null): string | null {
-  if (!token) return null;
-
-  try {
-    const payloadBase64 = token.split('.')[1];
-    const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
-    const payload = JSON.parse(payloadJson);
-
-    return payload.role ?? payload.authorities?.[0] ?? null;
-  } catch {
-    return null;
-  }
-}
-
 function renderSimpleMarkdown(text: string | null | undefined): string {
   if (!text) return '';
 
@@ -131,9 +118,7 @@ export default function ProvasPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const role = getRoleFromToken(token);
-    setUserRole(role);
+    setUserRole(getCurrentUserRole());
   }, []);
 
   const [page, setPage] = useState(0);

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { api } from '@/services/api';
+import { getCurrentUserRole } from '@/services/auth';
 import {
   Alert,
   Box,
@@ -72,19 +73,6 @@ type ApiResponse<T> = {
   path: string;
 };
 
-function getRoleFromToken(token: string | null): string | null {
-  if (!token) return null;
-
-  try {
-    const payloadBase64 = token.split('.')[1];
-    const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
-    const payload = JSON.parse(payloadJson);
-    return payload.role ?? payload.authorities?.[0] ?? null;
-  } catch {
-    return null;
-  }
-}
-
 function extrairLetraAlternativa(alternativa: string) {
   return alternativa.trim().charAt(0).replace(')', '').toUpperCase();
 }
@@ -108,8 +96,7 @@ export default function QuestoesPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setUserRole(getRoleFromToken(token));
+    setUserRole(getCurrentUserRole());
   }, []);
 
   const { data, isLoading, isError, error } = useQuery({

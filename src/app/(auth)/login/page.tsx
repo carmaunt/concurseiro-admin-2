@@ -18,7 +18,8 @@ import {
   Typography,
 } from '@mui/material';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
-import { api } from '@/services/api';
+import { api, getApiErrorStatus } from '@/services/api';
+import { saveAuthSession } from '@/services/auth';
 
 type FormData = {
   email: string;
@@ -53,19 +54,11 @@ export default function LoginPage() {
         return;
       }
 
-      localStorage.setItem('token', accessToken);
-
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
-      }
-
-      if (email) {
-        localStorage.setItem('userEmail', email);
-      }
+      saveAuthSession({ accessToken, refreshToken, email });
 
       router.push('/questoes');
     } catch (error: any) {
-      const status = error?.response?.status;
+      const status = getApiErrorStatus(error);
 
       if (status === 401) {
         setErro('Email ou senha inválidos.');

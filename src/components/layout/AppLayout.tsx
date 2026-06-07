@@ -17,22 +17,10 @@ import {
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useRouter, usePathname } from 'next/navigation';
+import { clearAuthSession, getCurrentUserRole } from '@/services/auth';
 
 const drawerWidth = 240;
 const headerHeight = 64;
-
-function getRoleFromToken(token: string | null): string | null {
-  if (!token) return null;
-
-  try {
-    const payloadBase64 = token.split('.')[1];
-    const payloadJson = atob(payloadBase64.replace(/-/g, '+').replace(/_/g, '/'));
-    const payload = JSON.parse(payloadJson);
-    return payload.role ?? payload.authorities?.[0] ?? null;
-  } catch {
-    return null;
-  }
-}
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -43,8 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setUserRole(getRoleFromToken(token));
+    setUserRole(getCurrentUserRole());
   }, []);
 
   useEffect(() => {
@@ -52,10 +39,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('userRole');
+    clearAuthSession();
     router.push('/login');
   };
 
