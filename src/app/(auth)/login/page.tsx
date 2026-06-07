@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
 import { api, getApiErrorStatus } from '@/services/api';
-import { saveAuthSession } from '@/services/auth';
+import { parseUserRole, saveAuthSession } from '@/services/auth';
 
 type FormData = {
   email: string;
@@ -46,7 +46,7 @@ export default function LoginPage() {
       });
 
       const email = response.data?.data?.email;
-      const role = response.data?.data?.role;
+      const role = parseUserRole(response.data?.data?.role);
 
       if (!email || !role) {
         setErro('Dados de sessão não encontrados na resposta.');

@@ -1,8 +1,8 @@
-export type UserRole = 'ADMIN' | 'VISITANTE' | string;
+export type UserRole = 'ADMIN' | 'VISITANTE' | 'USUARIO_FINAL';
 
 export type AuthSession = {
   email?: string | null;
-  role?: string | null;
+  role?: UserRole | string | null;
 };
 
 const STORAGE_KEYS = {
@@ -19,6 +19,18 @@ function isBrowser() {
   return typeof window !== 'undefined';
 }
 
+export function parseUserRole(value: unknown): UserRole | null {
+  if (typeof value !== 'string') return null;
+
+  const normalized = value.trim().toUpperCase();
+
+  if (normalized === 'ADMIN' || normalized === 'VISITANTE' || normalized === 'USUARIO_FINAL') {
+    return normalized;
+  }
+
+  return null;
+}
+
 export function hasAuthSession() {
   if (!isBrowser()) return false;
 
@@ -28,6 +40,8 @@ export function hasAuthSession() {
 export function saveAuthSession({ email, role }: AuthSession) {
   if (!isBrowser()) return;
 
+  const parsedRole = parseUserRole(role);
+
   LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
   localStorage.setItem(STORAGE_KEYS.sessionActive, 'true');
 
@@ -35,8 +49,8 @@ export function saveAuthSession({ email, role }: AuthSession) {
     localStorage.setItem(STORAGE_KEYS.userEmail, email);
   }
 
-  if (role) {
-    localStorage.setItem(STORAGE_KEYS.userRole, role);
+  if (parsedRole) {
+    localStorage.setItem(STORAGE_KEYS.userRole, parsedRole);
   }
 }
 
@@ -49,5 +63,5 @@ export function clearAuthSession() {
 export function getCurrentUserRole() {
   if (!isBrowser()) return null;
 
-  return localStorage.getItem(STORAGE_KEYS.userRole);
+  return parseUserRole(localStorage.getItem(STORAGE_KEYS.userRole));
 }

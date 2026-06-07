@@ -18,8 +18,9 @@ import {
   Typography,
 } from '@mui/material';
 import { api, getApiErrorMessage } from '@/services/api';
+import { normalizeCatalogItem, normalizeCatalogItems, normalizeSupportTexts } from '@/services/normalizers';
 import type { CatalogoItem, ProvaDetalhe, TextoApoio } from '@/types/api';
-import { arrayOf, dataOf, numberProp, stringProp } from '@/utils/unknown';
+import { unwrapApiData } from '@/utils/unknown';
 
 type Prova = ProvaDetalhe;
 type Item = CatalogoItem;
@@ -60,33 +61,6 @@ const defaults: FormData = {
 
 const ADD_NEW = '__ADD_NEW__';
 const GABARITO_ANULADA = 'X';
-
-function itens(value: unknown): Item[] {
-  return arrayOf(value)
-    .map((x) => ({
-      id: numberProp(x, ['id', 'idDisciplina', 'idAssunto', 'idSubassunto']),
-      nome: stringProp(x, ['nome', 'titulo', 'descricao', 'name']),
-    }))
-    .filter((x) => Number.isFinite(x.id) && x.nome);
-}
-
-function itemOf(value: unknown): Item {
-  const raw = dataOf<unknown>(value);
-  return {
-    id: numberProp(raw, ['id', 'idDisciplina', 'idAssunto', 'idSubassunto']),
-    nome: stringProp(raw, ['nome', 'titulo', 'descricao', 'name']),
-  };
-}
-
-function textos(value: unknown): TextoApoio[] {
-  return arrayOf(value)
-    .map((x) => ({
-      id: numberProp(x, ['id']),
-      titulo: stringProp(x, ['titulo']) || null,
-      conteudo: stringProp(x, ['conteudo']),
-    }))
-    .filter((x) => Number.isFinite(x.id) && x.conteudo);
-}
 
 function norm(value?: string) {
   return (value || '')
@@ -158,9 +132,9 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
           api.get('/api/v1/catalogo/disciplinas'),
           api.get('/api/v1/textos-apoio', { params: { page: 0, size: 50 } }),
         ]);
-        setProva(dataOf<Prova>(provaRes.data));
-        setDisciplinas(itens(disciplinasRes.data));
-        setTextosApoio(textos(textosRes.data));
+        setProva(unwrapApiData<Prova>(provaRes.data));
+        setDisciplinas(normalizeCatalogItems(disciplinasRes.data));
+        setTextosApoio(normalizeSupportTexts(textosRes.data));
       } catch {
         setErro('Não foi possível carregar os dados da página.');
       } finally {
@@ -178,7 +152,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       setValue('subassunto', '');
       if (!disciplinaId) return;
       const res = await api.get(`/api/v1/catalogo/disciplinas/${disciplinaId}/assuntos`);
-      setAssuntos(itens(res.data));
+      setAssuntos(normalizeCatalogItems(res.data));
     }
     load().catch(() => setAssuntos([]));
   }, [disciplinaId, setValue]);
@@ -189,7 +163,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       setValue('subassunto', '');
       if (!assuntoId) return;
       const res = await api.get(`/api/v1/catalogo/assuntos/${assuntoId}/subassuntos`);
-      setSubassuntos(itens(res.data));
+      setSubassuntos(normalizeCatalogItems(res.data));
     }
     load().catch(() => setSubassuntos([]));
   }, [assuntoId, setValue]);
@@ -200,7 +174,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
 
     try {
       const res = await api.post('/api/v1/admin/catalogo/disciplinas', { nome });
-      const novo = itemOf(res.data);
+      const novo = normalizeCatalogItem(res.data);
       setDisciplinas((atual) => [novo, ...atual.filter((item) => item.id !== novo.id)]);
       setValue('disciplinaId', String(novo.id));
       setSucesso(`Disciplina "${novo.nome}" adicionada.`);
@@ -223,7 +197,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
         disciplinaId: Number(disciplinaId),
         nome,
       });
-      const novo = itemOf(res.data);
+      const novo = normalizeCatalogItem(res.data);
       setAssuntos((atual) => [novo, ...atual.filter((item) => item.id !== novo.id)]);
       setValue('assuntoId', String(novo.id));
       setSucesso(`Assunto "${novo.nome}" adicionado.`);
@@ -246,7 +220,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
         assuntoId: Number(assuntoId),
         nome,
       });
-      const novo = itemOf(res.data);
+      const novo = normalizeCatalogItem(res.data);
       setSubassuntos((atual) => [novo, ...atual.filter((item) => item.nome !== novo.nome)]);
       setValue('subassunto', novo.nome);
       setSucesso(`Subassunto "${novo.nome}" adicionado.`);

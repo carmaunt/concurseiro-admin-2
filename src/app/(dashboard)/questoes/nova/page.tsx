@@ -15,8 +15,8 @@ import {
   Typography,
 } from '@mui/material';
 import { api, getApiErrorMessage } from '@/services/api';
+import { normalizeCatalogItems, normalizeSupportTexts } from '@/services/normalizers';
 import type { CatalogoItem, TextoApoio } from '@/types/api';
-import { arrayOf, numberProp, stringProp } from '@/utils/unknown';
 
 type ModalidadeUI = '' | 'Múltipla Escolha (A até E)' | 'Múltipla Escolha (A até D)' | 'Certo/Errado';
 
@@ -67,25 +67,6 @@ const initialForm: FormState = {
   altD: '',
   altE: '',
 };
-
-function normalizarCatalogo(data: unknown): CatalogoItem[] {
-  return arrayOf(data)
-    .map((item) => ({
-      id: numberProp(item, ['id', 'idDisciplina', 'idAssunto', 'idSubassunto', 'idBanca', 'idInstituicao']),
-      nome: stringProp(item, ['nome', 'titulo', 'descricao', 'name']),
-    }))
-    .filter((item: CatalogoItem) => item.id != null && item.nome);
-}
-
-function normalizarTextosApoio(data: unknown): TextoApoio[] {
-  return arrayOf(data)
-    .map((item) => ({
-      id: numberProp(item, ['id']),
-      titulo: stringProp(item, ['titulo']) || null,
-      conteudo: stringProp(item, ['conteudo']),
-    }))
-    .filter((item: TextoApoio) => item.id != null && item.conteudo);
-}
 
 function escapeLine(value: string) {
   return value.replace(/\r?\n/g, ' ').trim();
@@ -144,10 +125,10 @@ export default function NovaQuestaoPage() {
           api.get('/api/v1/catalogo/instituicoes'),
           api.get('/api/v1/textos-apoio', { params: { page: 0, size: 50 } }),
         ]);
-        setDisciplinas(normalizarCatalogo(disciplinasRes.data));
-        setBancas(normalizarCatalogo(bancasRes.data));
-        setInstituicoes(normalizarCatalogo(instituicoesRes.data));
-        setTextosApoio(normalizarTextosApoio(textosRes.data));
+        setDisciplinas(normalizeCatalogItems(disciplinasRes.data));
+        setBancas(normalizeCatalogItems(bancasRes.data));
+        setInstituicoes(normalizeCatalogItems(instituicoesRes.data));
+        setTextosApoio(normalizeSupportTexts(textosRes.data));
       } catch (error: unknown) {
         setMsg({ type: 'error', text: getApiErrorMessage(error, 'Não foi possível carregar os dados iniciais.') });
       } finally {
@@ -168,7 +149,7 @@ export default function NovaQuestaoPage() {
 
       try {
         const res = await api.get(`/api/v1/catalogo/disciplinas/${encodeURIComponent(form.disciplinaId)}/assuntos`);
-        setAssuntos(normalizarCatalogo(res.data));
+        setAssuntos(normalizeCatalogItems(res.data));
       } catch {
         setAssuntos([]);
       }

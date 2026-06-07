@@ -14,8 +14,8 @@ import {
   Typography,
 } from '@mui/material';
 import { api, getApiErrorMessage, getApiErrorStatus } from '@/services/api';
+import { normalizeCatalogItem, normalizeCatalogItems } from '@/services/normalizers';
 import type { CatalogoItem } from '@/types/api';
-import { arrayOf, dataOf, numberProp, stringProp } from '@/utils/unknown';
 
 type FormData = {
   banca: string;
@@ -29,15 +29,6 @@ type FormData = {
 };
 
 const NOVO_VALOR = '__new__';
-
-function normalizarLista(data: unknown): CatalogoItem[] {
-  return arrayOf(data)
-    .map((x) => ({
-      id: numberProp(x, ['id', 'idBanca', 'idInstituicao']),
-      nome: stringProp(x, ['nome', 'name']),
-    }))
-    .filter((x: CatalogoItem) => x.id != null && x.nome);
-}
 
 export default function NovaProvaPage() {
   const router = useRouter();
@@ -79,8 +70,8 @@ export default function NovaProvaPage() {
           api.get('/api/v1/catalogo/instituicoes'),
         ]);
 
-        setBancas(normalizarLista(bancasRes.data));
-        setInstituicoes(normalizarLista(instituicoesRes.data));
+        setBancas(normalizeCatalogItems(bancasRes.data));
+        setInstituicoes(normalizeCatalogItems(instituicoesRes.data));
       } catch {
         setErro('Não foi possível carregar bancas e instituições do catálogo.');
       } finally {
@@ -101,16 +92,13 @@ export default function NovaProvaPage() {
         : '/api/v1/admin/catalogo/instituicoes';
 
     const res = await api.post(path, { nome: nomeLimpo });
-    const created = dataOf<unknown>(res.data);
+    const created = normalizeCatalogItem(res.data);
 
-    const id = numberProp(created, ['id', 'idBanca', 'idInstituicao']);
-    const nomeResp = stringProp(created, ['nome'], nomeLimpo);
-
-    if (!Number.isFinite(id)) {
+    if (!Number.isFinite(created.id)) {
       throw new Error('O backend não retornou o id do item criado.');
     }
 
-    return { id, nome: nomeResp };
+    return { id: created.id, nome: created.nome || nomeLimpo };
   }
 
   const handleInlineCreate = async (tipo: 'banca' | 'instituicao') => {

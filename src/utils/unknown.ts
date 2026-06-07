@@ -10,6 +10,8 @@ export function dataOf<T>(value: unknown): T {
   return (isRecord(value) && 'data' in value ? value.data : value) as T;
 }
 
+export const unwrapApiData = dataOf;
+
 export function arrayOf(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
 
