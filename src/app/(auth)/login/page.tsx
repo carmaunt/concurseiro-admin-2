@@ -18,13 +18,23 @@ import {
   Typography,
 } from '@mui/material';
 import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
-import { api, getApiErrorStatus } from '@/services/api';
+import { API_BASE_URL, api, getApiErrorMessage, getApiErrorStatus } from '@/services/api';
 import { parseUserRole, saveAuthSession } from '@/services/auth';
+import { stringProp, unwrapApiData } from '@/utils/unknown';
 
 type FormData = {
   email: string;
   senha: string;
 };
+
+function extractAuthSession(data: unknown) {
+  const payload = unwrapApiData<unknown>(data);
+
+  return {
+    email: stringProp(payload, ['email']),
+    role: parseUserRole(stringProp(payload, ['role'])),
+  };
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,14 +49,18 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setErro('');
 
+    if (!API_BASE_URL) {
+      setErro('API não configurada para este ambiente. Verifique NEXT_PUBLIC_API_URL no deploy.');
+      return;
+    }
+
     try {
       const response = await api.post('/api/v1/auth/login', {
         email: data.email,
         senha: data.senha,
       });
 
-      const email = response.data?.email;
-      const role = parseUserRole(response.data?.role);
+      const { email, role } = extractAuthSession(response.data);
 
       if (!email || !role) {
         setErro('Dados de sessão não encontrados na resposta.');
@@ -69,7 +83,7 @@ export default function LoginPage() {
         return;
       }
 
-      setErro('Não foi possível realizar o login.');
+      setErro(getApiErrorMessage(error, 'Não foi possível realizar o login.'));
     }
   };
 

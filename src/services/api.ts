@@ -3,15 +3,17 @@ import axios from 'axios';
 import { clearAuthSession } from './auth';
 
 const PUBLIC_AUTH_PATHS = ['/login', '/cadastro'];
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 type ApiErrorPayload = {
+  title?: unknown;
   detail?: unknown;
   message?: unknown;
   error?: unknown;
 };
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: API_BASE_URL,
   withCredentials: true,
 });
 
@@ -36,6 +38,7 @@ export function getApiErrorMessage(error: unknown, fallback = 'Não foi possíve
 
   const data = error.response?.data;
 
+  if (typeof data?.title === 'string') return data.title;
   if (typeof data?.detail === 'string') return data.detail;
   if (typeof data?.message === 'string') return data.message;
   if (typeof data?.error === 'string') return data.error;
