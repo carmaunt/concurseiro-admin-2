@@ -24,7 +24,7 @@ Backend: `/home/mauricio/concurseiro-api`
 - [x] Centralizar cliente HTTP com tratamento padronizado de erro, resposta e redirecionamento em `401`.
 - [x] Centralizar autenticacao e leitura de usuario/role, removendo logica duplicada de JWT nas telas.
 - [x] Revisar estrategia de armazenamento de tokens com o backend e migrar para abordagem mais segura, preferencialmente cookie `httpOnly`.
-- [ ] Garantir protecao real de rotas administrativas no backend, deixando o frontend apenas como reflexo da permissao.
+- [x] Garantir protecao real de rotas administrativas no backend, deixando o frontend apenas como reflexo da permissao.
 
 ## Prioridade 2 - Qualidade de codigo
 
