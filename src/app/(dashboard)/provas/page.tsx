@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Alert, Box, Button, CircularProgress, Snackbar, Stack, Typography } from '@mui/material';
+import { Box, Button, Stack, Typography } from '@mui/material';
+import { FeedbackSnackbar, ListPageState } from '@/components/listing/ListLayout';
 import { ProvaDeleteDialog } from '@/components/provas/ProvaDeleteDialog';
 import { ProvaDetalheDialog } from '@/components/provas/ProvaDetalheDialog';
 import { ProvasStats } from '@/components/provas/ProvasStats';
@@ -24,7 +25,7 @@ export default function ProvasPage() {
   const [provaParaExcluir, setProvaParaExcluir] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const { data, isLoading, isError, error } = useProvas(page, size);
+  const { data, isLoading, isError, error, refetch } = useProvas(page, size);
   const questoesDaProvaQuery = useQuestoesDaProva(provaSelecionada?.id ?? null);
 
   const deletarProva = useExcluirProva({
@@ -71,17 +72,26 @@ export default function ProvasPage() {
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
-        <CircularProgress />
-      </Box>
+      <ListPageState
+        type="loading"
+        title="Carregando provas"
+        message="Buscando os registros cadastrados."
+      />
     );
   }
 
   if (isError) {
     return (
-      <Alert severity="error">
-        {getApiErrorMessage(error, 'Não foi possível carregar as provas.')}
-      </Alert>
+      <ListPageState
+        type="error"
+        title="Erro ao carregar provas"
+        message={getApiErrorMessage(error, 'Não foi possível carregar as provas.')}
+        action={
+          <Button variant="contained" onClick={() => refetch()} sx={{ textTransform: 'none', fontWeight: 700 }}>
+            Tentar novamente
+          </Button>
+        }
+      />
     );
   }
 
@@ -91,11 +101,11 @@ export default function ProvasPage() {
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', sm: 'center' }}
+          alignItems={{ xs: 'stretch', sm: 'center' }}
           spacing={2}
         >
           <Box>
-            <Typography variant="h4" fontWeight={700}>
+            <Typography variant="h4" fontWeight={800}>
               Provas
             </Typography>
             <Typography color="text.secondary" mt={0.5}>
@@ -113,6 +123,7 @@ export default function ProvasPage() {
               fontWeight: 700,
               textTransform: 'none',
               boxShadow: 'none',
+              minWidth: { sm: 150 },
             }}
           >
             Nova prova
@@ -168,18 +179,7 @@ export default function ProvasPage() {
         onConfirm={confirmarExclusao}
       />
 
-      <Snackbar
-        open={Boolean(feedback)}
-        autoHideDuration={4000}
-        onClose={() => setFeedback(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        {feedback ? (
-          <Alert severity={feedback.type} onClose={() => setFeedback(null)} sx={{ width: '100%' }}>
-            {feedback.message}
-          </Alert>
-        ) : undefined}
-      </Snackbar>
+      <FeedbackSnackbar feedback={feedback} onClose={() => setFeedback(null)} />
     </Box>
   );
 }
