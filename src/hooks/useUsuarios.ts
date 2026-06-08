@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type UseMutationOptions } from '@tanstack/react-query';
 import {
   ativarUsuario,
   excluirUsuario,
@@ -16,20 +16,28 @@ export function useUsuarios() {
   });
 }
 
-export function useAtivarUsuario() {
+export function useAtivarUsuario(options?: UseMutationOptions<void, unknown, number>) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ativarUsuario,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: usuariosKeys.all }),
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: usuariosKeys.all });
+      options?.onSuccess?.(...args);
+    },
   });
 }
 
-export function useExcluirUsuario() {
+export function useExcluirUsuario(options?: UseMutationOptions<void, unknown, number>) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: excluirUsuario,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: usuariosKeys.all }),
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: usuariosKeys.all });
+      options?.onSuccess?.(...args);
+    },
   });
 }
