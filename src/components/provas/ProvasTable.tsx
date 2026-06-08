@@ -1,20 +1,17 @@
 import {
-  Box,
   IconButton,
-  Paper,
   Stack,
   Table,
   TableBody,
   TableCell,
   TableHead,
-  TablePagination,
   TableRow,
   Tooltip,
-  Typography,
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import { ListPanel, ListPagination, ListTableEmptyState } from '@/components/listing/ListLayout';
 import type { ProvaListItem } from '@/types/api';
 
 type ProvasTableProps = {
@@ -51,25 +48,8 @@ export function ProvasTable({
   onRowsPerPageChange,
 }: ProvasTableProps) {
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        borderRadius: 4,
-        border: '1px solid #e8edf3',
-        overflow: 'hidden',
-        bgcolor: '#fff',
-      }}
-    >
-      <Box sx={{ p: 3, borderBottom: '1px solid #eef2f7' }}>
-        <Typography variant="h6" fontWeight={700}>
-          Lista de provas
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Exibindo banca, instituição, ano e modalidade.
-        </Typography>
-      </Box>
-
-      <Table>
+    <ListPanel title="Lista de provas" description="Exibindo banca, instituição, ano e modalidade.">
+      <Table sx={{ minWidth: 760 }}>
         <TableHead>
           <TableRow sx={{ bgcolor: '#fafbfc' }}>
             <TableCell sx={{ width: '25%' }}>
@@ -95,11 +75,11 @@ export function ProvasTable({
 
         <TableBody>
           {provas.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-                <Typography color="text.secondary">Nenhuma prova encontrada.</Typography>
-              </TableCell>
-            </TableRow>
+            <ListTableEmptyState
+              colSpan={6}
+              title="Nenhuma prova encontrada."
+              description="Cadastre uma nova prova para começar a montar simulados e vincular questões."
+            />
           ) : (
             provas.map((prova) => (
               <TableRow key={prova.id} hover>
@@ -142,17 +122,14 @@ export function ProvasTable({
       </Table>
 
       {provas.length > 0 && (
-        <TablePagination
-          component="div"
+        <ListPagination
           count={totalElements}
           page={pageAtual}
-          onPageChange={(_, newPage) => onPageChange(newPage)}
           rowsPerPage={sizeAtual}
-          onRowsPerPageChange={(event) => onRowsPerPageChange(Number(event.target.value))}
-          rowsPerPageOptions={[10, 20, 50]}
-          labelRowsPerPage="Itens por página"
+          onPageChange={onPageChange}
+          onRowsPerPageChange={onRowsPerPageChange}
         />
       )}
-    </Paper>
+    </ListPanel>
   );
 }
