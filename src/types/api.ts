@@ -38,7 +38,9 @@ export type CatalogoItem = {
 export type TextoApoio = {
   id: number;
   titulo: string | null;
+  tipo?: 'TEXTO' | 'CODIGO' | 'TABELA' | null;
   conteudo: string;
+  conteudoJson?: string | null;
 };
 
 export type QuestaoListItem = {
@@ -49,6 +51,8 @@ export type QuestaoListItem = {
   textoApoioId?: number | null;
   textoApoioTitulo?: string | null;
   textoApoioConteudo?: string | null;
+  textoApoioTipo?: 'TEXTO' | 'CODIGO' | 'TABELA' | null;
+  textoApoioJson?: string | null;
   disciplina: string;
   disciplinaId: number;
   assunto: string;

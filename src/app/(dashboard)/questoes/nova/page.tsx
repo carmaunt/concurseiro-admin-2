@@ -24,6 +24,7 @@ import {
 } from '@/services/catalogoService';
 import { criarQuestao } from '@/services/questoesService';
 import type { CatalogoItem, TextoApoio } from '@/types/api';
+import TextoApoioEditor, { type TextoApoioEditorValue, type TextoApoioTipo } from '@/components/questoes/TextoApoioEditor';
 
 type ModalidadeUI = '' | 'Múltipla Escolha (A até E)' | 'Múltipla Escolha (A até D)' | 'Certo/Errado';
 
@@ -39,7 +40,9 @@ type FormState = {
   modalidade: ModalidadeUI;
   textoApoioId: string;
   textoApoioTitulo: string;
+  textoApoioTipo: TextoApoioTipo;
   textoApoioConteudo: string;
+  textoApoioJson: string;
   enunciado: string;
   questao: string;
   gabarito: string;
@@ -64,7 +67,9 @@ const initialForm: FormState = {
   modalidade: '',
   textoApoioId: '',
   textoApoioTitulo: '',
+  textoApoioTipo: 'TEXTO',
   textoApoioConteudo: '',
+  textoApoioJson: '',
   enunciado: '',
   questao: '',
   gabarito: '',
@@ -119,6 +124,10 @@ export default function NovaQuestaoPage() {
   const [textosApoio, setTextosApoio] = useState<TextoApoio[]>([]);
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const setTextoApoioField = <K extends keyof TextoApoioEditorValue>(key: K, value: TextoApoioEditorValue[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -186,8 +195,12 @@ export default function NovaQuestaoPage() {
       setMsg({ type: 'error', text: 'Preencha enunciado e questão.' });
       return false;
     }
-    if (form.textoApoioId && form.textoApoioConteudo.trim()) {
+    if (form.textoApoioId && (form.textoApoioConteudo.trim() || form.textoApoioJson.trim())) {
       setMsg({ type: 'error', text: 'Use texto de apoio existente ou cole um novo texto, não os dois ao mesmo tempo.' });
+      return false;
+    }
+    if (!form.textoApoioId && form.textoApoioTipo === 'TABELA' && form.textoApoioConteudo.trim() && !form.textoApoioJson.trim()) {
+      setMsg({ type: 'error', text: 'Converta ou preencha a tabela antes de salvar.' });
       return false;
     }
     const gabarito = form.gabarito.trim().toUpperCase();
@@ -218,7 +231,9 @@ export default function NovaQuestaoPage() {
       alternativas: montarAlternativas(form.modalidade, form),
       textoApoioId: form.textoApoioId ? Number(form.textoApoioId) : null,
       textoApoioTitulo: form.textoApoioId ? null : form.textoApoioTitulo.trim() || null,
+      textoApoioTipo: form.textoApoioId ? null : form.textoApoioTipo,
       textoApoioConteudo: form.textoApoioId ? null : form.textoApoioConteudo.trim() || null,
+      textoApoioJson: form.textoApoioId ? null : form.textoApoioJson.trim() || null,
       disciplinaId: Number(form.disciplinaId),
       assuntoId: Number(form.assuntoId),
       subassunto: form.subassunto.trim() || null,
@@ -314,16 +329,21 @@ export default function NovaQuestaoPage() {
                       <Typography variant="body2" color="text.secondary">Use quando várias questões compartilham o mesmo texto base. Selecione um existente ou cole um novo.</Typography>
                     </Box>
 
-                    <TextField select label="Usar texto de apoio existente" fullWidth value={form.textoApoioId} onChange={(e) => { setField('textoApoioId', e.target.value); if (e.target.value) { setField('textoApoioTitulo', ''); setField('textoApoioConteudo', ''); } }}>
+                    <TextField select label="Usar texto de apoio existente" fullWidth value={form.textoApoioId} onChange={(e) => { setField('textoApoioId', e.target.value); if (e.target.value) { setField('textoApoioTitulo', ''); setField('textoApoioTipo', 'TEXTO'); setField('textoApoioConteudo', ''); setField('textoApoioJson', ''); } }}>
                       <MenuItem value="">Nenhum</MenuItem>
                       {textosApoio.map((item) => <MenuItem key={item.id} value={String(item.id)}>{item.titulo || `Texto de apoio #${item.id}`}</MenuItem>)}
                     </TextField>
 
                     {!form.textoApoioId && (
-                      <>
-                        <TextField label="Título do novo texto de apoio" fullWidth value={form.textoApoioTitulo} onChange={(e) => setField('textoApoioTitulo', e.target.value)} />
-                        <TextField label="Novo texto de apoio" multiline minRows={6} fullWidth value={form.textoApoioConteudo} onChange={(e) => setField('textoApoioConteudo', e.target.value)} />
-                      </>
+                      <TextoApoioEditor
+                        value={{
+                          textoApoioTitulo: form.textoApoioTitulo,
+                          textoApoioTipo: form.textoApoioTipo,
+                          textoApoioConteudo: form.textoApoioConteudo,
+                          textoApoioJson: form.textoApoioJson,
+                        }}
+                        onChange={setTextoApoioField}
+                      />
                     )}
                   </Stack>
                 </Paper>

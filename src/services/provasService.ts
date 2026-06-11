@@ -17,7 +17,9 @@ export type CriarQuestaoProvaPayload = {
   alternativas: string;
   textoApoioId: number | null;
   textoApoioTitulo: string | null;
+  textoApoioTipo: string | null;
   textoApoioConteudo: string | null;
+  textoApoioJson: string | null;
   disciplinaId: number;
   assuntoId: number;
   subassunto: string | null;

@@ -29,6 +29,7 @@ import {
 } from '@/services/catalogoService';
 import { criarQuestaoDaProva, obterProva } from '@/services/provasService';
 import type { CatalogoItem, ProvaDetalhe, TextoApoio } from '@/types/api';
+import TextoApoioEditor, { type TextoApoioEditorValue, type TextoApoioTipo } from '@/components/questoes/TextoApoioEditor';
 
 type Prova = ProvaDetalhe;
 type Item = CatalogoItem;
@@ -36,7 +37,9 @@ type Item = CatalogoItem;
 type FormData = {
   textoApoioId: string;
   textoApoioTitulo: string;
+  textoApoioTipo: TextoApoioTipo;
   textoApoioConteudo: string;
+  textoApoioJson: string;
   enunciado: string;
   questao: string;
   disciplinaId: string;
@@ -53,7 +56,9 @@ type FormData = {
 const defaults: FormData = {
   textoApoioId: '',
   textoApoioTitulo: '',
+  textoApoioTipo: 'TEXTO',
   textoApoioConteudo: '',
+  textoApoioJson: '',
   enunciado: '',
   questao: '',
   disciplinaId: '',
@@ -129,7 +134,28 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   const disciplinaId = watch('disciplinaId');
   const assuntoId = watch('assuntoId');
   const textoApoioId = watch('textoApoioId');
+  const textoApoioTitulo = watch('textoApoioTitulo');
+  const textoApoioTipo = watch('textoApoioTipo');
+  const textoApoioConteudo = watch('textoApoioConteudo');
+  const textoApoioJson = watch('textoApoioJson');
   const gabaritoOptions = useMemo(() => gabaritos(prova?.modalidade), [prova?.modalidade]);
+
+  const setTextoApoioField = <K extends keyof TextoApoioEditorValue>(key: K, value: TextoApoioEditorValue[K]) => {
+    switch (key) {
+      case 'textoApoioTitulo':
+        setValue('textoApoioTitulo', value);
+        break;
+      case 'textoApoioTipo':
+        setValue('textoApoioTipo', value as TextoApoioTipo);
+        break;
+      case 'textoApoioConteudo':
+        setValue('textoApoioConteudo', value);
+        break;
+      case 'textoApoioJson':
+        setValue('textoApoioJson', value);
+        break;
+    }
+  };
 
   useEffect(() => {
     async function init() {
@@ -236,8 +262,13 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     setErro('');
     setSucesso('');
 
-    if (data.textoApoioId && data.textoApoioConteudo.trim()) {
+    if (data.textoApoioId && (data.textoApoioConteudo.trim() || data.textoApoioJson.trim())) {
       setErro('Use texto de apoio existente ou cole um novo texto, não os dois ao mesmo tempo.');
+      return;
+    }
+
+    if (!data.textoApoioId && data.textoApoioTipo === 'TABELA' && data.textoApoioConteudo.trim() && !data.textoApoioJson.trim()) {
+      setErro('Converta ou preencha a tabela antes de salvar.');
       return;
     }
 
@@ -248,7 +279,9 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
         alternativas: montarAlternativas(prova, data),
         textoApoioId: data.textoApoioId ? Number(data.textoApoioId) : null,
         textoApoioTitulo: data.textoApoioId ? null : data.textoApoioTitulo.trim() || null,
+        textoApoioTipo: data.textoApoioId ? null : data.textoApoioTipo,
         textoApoioConteudo: data.textoApoioId ? null : data.textoApoioConteudo.trim() || null,
+        textoApoioJson: data.textoApoioId ? null : data.textoApoioJson.trim() || null,
         disciplinaId: Number(data.disciplinaId),
         assuntoId: Number(data.assuntoId),
         subassunto: data.subassunto || null,
@@ -315,7 +348,9 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
                           setValue('textoApoioId', e.target.value);
                           if (e.target.value) {
                             setValue('textoApoioTitulo', '');
+                            setValue('textoApoioTipo', 'TEXTO');
                             setValue('textoApoioConteudo', '');
+                            setValue('textoApoioJson', '');
                           }
                         }}
                       >
@@ -326,10 +361,15 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
                       </TextField>
 
                       {!textoApoioId && (
-                        <>
-                          <TextField label="Título do novo texto de apoio" fullWidth {...register('textoApoioTitulo')} />
-                          <TextField label="Novo texto de apoio" multiline minRows={6} fullWidth {...register('textoApoioConteudo')} />
-                        </>
+                        <TextoApoioEditor
+                          value={{
+                            textoApoioTitulo,
+                            textoApoioTipo,
+                            textoApoioConteudo,
+                            textoApoioJson,
+                          }}
+                          onChange={setTextoApoioField}
+                        />
                       )}
                     </Stack>
                   </Paper>
