@@ -7,6 +7,7 @@ import { useCurrentUserRole } from '@/hooks/useAuthSession';
 import { useExcluirQuestao, useQuestoes } from '@/hooks/useQuestoes';
 import { getApiErrorMessage } from '@/services/api';
 import type { QuestaoListItem } from '@/types/api';
+import TextoApoioViewer from '@/components/questoes/TextoApoioViewer';
 import {
   Alert,
   Box,
@@ -252,13 +253,13 @@ export default function QuestoesPage() {
                       <Typography variant="body2"><Box component="span" sx={{ fontWeight: 700 }}>Modalidade:</Box> {questaoSelecionada.modalidade}</Typography>
                     </Stack>
 
-                    {questaoSelecionada.textoApoioConteudo && (
-                      <Paper elevation={0} sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 3, border: '1px solid #dbeafe', backgroundColor: '#eff6ff' }}>
-                        <Stack spacing={1}>
-                          <Typography variant="subtitle2" fontWeight={800} color="#1e40af">{questaoSelecionada.textoApoioTitulo || 'Texto de apoio'}</Typography>
-                          <Typography variant="body1" sx={{ color: '#334155', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{questaoSelecionada.textoApoioConteudo}</Typography>
-                        </Stack>
-                      </Paper>
+                    {(questaoSelecionada.textoApoioConteudo || questaoSelecionada.textoApoioJson) && (
+                      <TextoApoioViewer
+                        titulo={questaoSelecionada.textoApoioTitulo}
+                        tipo={questaoSelecionada.textoApoioTipo}
+                        conteudo={questaoSelecionada.textoApoioConteudo}
+                        conteudoJson={questaoSelecionada.textoApoioJson}
+                      />
                     )}
 
                     <Typography variant="body1" sx={{ color: '#475569', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{questaoSelecionada.enunciado}</Typography>

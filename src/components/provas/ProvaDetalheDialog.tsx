@@ -11,6 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 import { SafeMarkdown } from '@/components/content/SafeMarkdown';
+import TextoApoioViewer from '@/components/questoes/TextoApoioViewer';
 import type { ProvaListItem, QuestaoListItem } from '@/types/api';
 
 type ProvaDetalheDialogProps = {
@@ -225,6 +226,16 @@ export function ProvaDetalheDialog({
                                   </Typography>
                                 )}
                               </Stack>
+
+                              {(questao.textoApoioConteudo || questao.textoApoioJson) && (
+                                <TextoApoioViewer
+                                  titulo={questao.textoApoioTitulo}
+                                  tipo={questao.textoApoioTipo}
+                                  conteudo={questao.textoApoioConteudo}
+                                  conteudoJson={questao.textoApoioJson}
+                                  compact
+                                />
+                              )}
 
                               <SafeMarkdown value={questao.enunciado} sx={{ color: '#374151' }} />
                               <SafeMarkdown value={questao.questao} sx={{ color: '#374151' }} />

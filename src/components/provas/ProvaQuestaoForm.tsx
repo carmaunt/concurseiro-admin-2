@@ -28,8 +28,13 @@ import {
   listarTextosApoio,
 } from '@/services/catalogoService';
 import { criarQuestaoDaProva, obterProva } from '@/services/provasService';
+import {
+  prepararTextoApoioQuestao,
+  validarTextoApoioQuestao,
+} from '@/services/textosApoioService';
 import type { CatalogoItem, ProvaDetalhe, TextoApoio } from '@/types/api';
 import TextoApoioEditor, { type TextoApoioEditorValue, type TextoApoioTipo } from '@/components/questoes/TextoApoioEditor';
+import TextoApoioViewer from '@/components/questoes/TextoApoioViewer';
 
 type Prova = ProvaDetalhe;
 type Item = CatalogoItem;
@@ -121,6 +126,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
+  const [imagemArquivo, setImagemArquivo] = useState<File | null>(null);
 
   const {
     register,
@@ -139,6 +145,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   const textoApoioConteudo = watch('textoApoioConteudo');
   const textoApoioJson = watch('textoApoioJson');
   const gabaritoOptions = useMemo(() => gabaritos(prova?.modalidade), [prova?.modalidade]);
+  const textoApoioSelecionado = textosApoio.find((item) => String(item.id) === textoApoioId);
 
   const setTextoApoioField = <K extends keyof TextoApoioEditorValue>(key: K, value: TextoApoioEditorValue[K]) => {
     switch (key) {
@@ -267,27 +274,26 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       return;
     }
 
-    if (!data.textoApoioId && data.textoApoioTipo === 'TABELA' && data.textoApoioConteudo.trim() && !data.textoApoioJson.trim()) {
-      setErro('Converta ou preencha a tabela antes de salvar.');
+    const erroTextoApoio = validarTextoApoioQuestao({ ...data, imagemArquivo });
+    if (erroTextoApoio) {
+      setErro(erroTextoApoio);
       return;
     }
 
     try {
+      const textoApoio = await prepararTextoApoioQuestao({ ...data, imagemArquivo });
       await criarQuestaoDaProva(provaId, {
         enunciado: data.enunciado.trim(),
         questao: data.questao.trim(),
         alternativas: montarAlternativas(prova, data),
-        textoApoioId: data.textoApoioId ? Number(data.textoApoioId) : null,
-        textoApoioTitulo: data.textoApoioId ? null : data.textoApoioTitulo.trim() || null,
-        textoApoioTipo: data.textoApoioId ? null : data.textoApoioTipo,
-        textoApoioConteudo: data.textoApoioId ? null : data.textoApoioConteudo.trim() || null,
-        textoApoioJson: data.textoApoioId ? null : data.textoApoioJson.trim() || null,
+        ...textoApoio,
         disciplinaId: Number(data.disciplinaId),
         assuntoId: Number(data.assuntoId),
         subassunto: data.subassunto || null,
         gabarito: data.gabarito,
       });
       setSucesso('Questão cadastrada com sucesso nesta prova.');
+      setImagemArquivo(null);
       reset({
         ...defaults,
         textoApoioId: data.textoApoioId,
@@ -351,14 +357,25 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
                             setValue('textoApoioTipo', 'TEXTO');
                             setValue('textoApoioConteudo', '');
                             setValue('textoApoioJson', '');
+                            setImagemArquivo(null);
                           }
                         }}
                       >
                         <MenuItem value="">Nenhum</MenuItem>
                         {textosApoio.map((t) => (
-                          <MenuItem key={t.id} value={String(t.id)}>{t.titulo || `Texto de apoio #${t.id}`}</MenuItem>
+                          <MenuItem key={t.id} value={String(t.id)}>{t.titulo || `Texto de apoio #${t.id}`} · {t.tipo || 'TEXTO'}</MenuItem>
                         ))}
                       </TextField>
+
+                      {textoApoioSelecionado && (
+                        <TextoApoioViewer
+                          titulo={textoApoioSelecionado.titulo}
+                          tipo={textoApoioSelecionado.tipo}
+                          conteudo={textoApoioSelecionado.conteudo}
+                          conteudoJson={textoApoioSelecionado.conteudoJson}
+                          compact
+                        />
+                      )}
 
                       {!textoApoioId && (
                         <TextoApoioEditor
@@ -369,6 +386,8 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
                             textoApoioJson,
                           }}
                           onChange={setTextoApoioField}
+                          imagemArquivo={imagemArquivo}
+                          onImagemArquivoChange={setImagemArquivo}
                         />
                       )}
                     </Stack>

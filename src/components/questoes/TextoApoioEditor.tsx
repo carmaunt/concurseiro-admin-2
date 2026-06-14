@@ -1,9 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import TableRowsIcon from '@mui/icons-material/TableRows';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import {
+  Alert,
   Box,
   Button,
   IconButton,
@@ -13,13 +17,17 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import {
+  ajustarLinha,
+  normalizarTipoTextoApoio,
+  parseTabelaJson,
+  parseTabelaPipe,
+  serializarTabela,
+  type TabelaTextoApoio,
+  type TextoApoioTipo,
+} from './textoApoio';
 
-export type TextoApoioTipo = 'TEXTO' | 'CODIGO' | 'TABELA';
-
-type TabelaTextoApoio = {
-  colunas: string[];
-  linhas: string[][];
-};
+export type { TextoApoioTipo } from './textoApoio';
 
 export type TextoApoioEditorValue = {
   textoApoioTitulo: string;
@@ -31,86 +39,32 @@ export type TextoApoioEditorValue = {
 type Props = {
   value: TextoApoioEditorValue;
   onChange: <K extends keyof TextoApoioEditorValue>(key: K, value: TextoApoioEditorValue[K]) => void;
+  imagemArquivo: File | null;
+  onImagemArquivoChange: (arquivo: File | null) => void;
 };
 
-const tabelaVazia: TabelaTextoApoio = {
-  colunas: [''],
-  linhas: [['']],
-};
-
-export function normalizarTipoTextoApoio(tipo?: string | null): TextoApoioTipo {
-  if (tipo === 'CODIGO' || tipo === 'TABELA') return tipo;
-  return 'TEXTO';
-}
-
-export function montarFallbackTabela(tabela: TabelaTextoApoio) {
-  const linhas = [
-    tabela.colunas,
-    ...tabela.linhas,
-  ];
-
-  return linhas
-    .map((linha) => linha.map((celula) => celula.trim()).join(' | ').trim())
-    .filter(Boolean)
-    .join('\n');
-}
-
-export function parseTabelaPipe(raw: string): TabelaTextoApoio {
-  const linhas = raw
-    .split(/\r?\n/)
-    .map((linha) => linha.split('|').map((celula) => celula.trim()))
-    .filter((linha) => linha.some(Boolean));
-
-  if (linhas.length === 0) return tabelaVazia;
-
-  const colunas = linhas[0].length ? linhas[0] : [''];
-  const corpo = linhas.slice(1).map((linha) => ajustarLinha(linha, colunas.length));
-
-  return {
-    colunas,
-    linhas: corpo.length ? corpo : [Array.from({ length: colunas.length }, () => '')],
-  };
-}
-
-function parseTabelaJson(json: string, fallback: string): TabelaTextoApoio {
-  if (json.trim()) {
-    try {
-      const parsed = JSON.parse(json) as Partial<TabelaTextoApoio>;
-      if (Array.isArray(parsed.colunas) && Array.isArray(parsed.linhas)) {
-        const colunas = parsed.colunas.map(String);
-        return {
-          colunas: colunas.length ? colunas : [''],
-          linhas: parsed.linhas.length
-            ? parsed.linhas.map((linha) => ajustarLinha(Array.isArray(linha) ? linha.map(String) : [], colunas.length || 1))
-            : [Array.from({ length: colunas.length || 1 }, () => '')],
-        };
-      }
-    } catch {
-      // O fallback textual segue editável quando o JSON estiver inválido.
-    }
-  }
-
-  return fallback.trim() ? parseTabelaPipe(fallback) : tabelaVazia;
-}
-
-function ajustarLinha(linha: string[], tamanho: number) {
-  return Array.from({ length: tamanho }, (_, index) => linha[index] ?? '');
-}
-
-export function serializarTabela(tabela: TabelaTextoApoio) {
-  const limpa: TabelaTextoApoio = {
-    colunas: tabela.colunas.map((coluna) => coluna.trim()),
-    linhas: tabela.linhas.map((linha) => ajustarLinha(linha, tabela.colunas.length).map((celula) => celula.trim())),
-  };
-
-  return {
-    conteudo: montarFallbackTabela(limpa),
-    conteudoJson: JSON.stringify(limpa),
-  };
-}
-
-export default function TextoApoioEditor({ value, onChange }: Props) {
+export default function TextoApoioEditor({
+  value,
+  onChange,
+  imagemArquivo,
+  onImagemArquivoChange,
+}: Props) {
   const tabela = parseTabelaJson(value.textoApoioJson, value.textoApoioConteudo);
+  const [imagemPreview, setImagemPreview] = useState<{ arquivo: File; url: string } | null>(null);
+
+  useEffect(() => {
+    if (!imagemArquivo) return;
+
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      if (typeof reader.result === 'string') {
+        setImagemPreview({ arquivo: imagemArquivo, url: reader.result });
+      }
+    });
+    reader.readAsDataURL(imagemArquivo);
+
+    return () => reader.abort();
+  }, [imagemArquivo]);
 
   const atualizarTabela = (proxima: TabelaTextoApoio) => {
     const serializada = serializarTabela(proxima);
@@ -138,15 +92,17 @@ export default function TextoApoioEditor({ value, onChange }: Props) {
         onChange={(e) => {
           const tipo = normalizarTipoTextoApoio(e.target.value);
           onChange('textoApoioTipo', tipo);
-          if (tipo !== 'TABELA') onChange('textoApoioJson', '');
+          onChange('textoApoioJson', '');
+          if (tipo !== 'IMAGEM') onImagemArquivoChange(null);
         }}
       >
         <MenuItem value="TEXTO">Texto</MenuItem>
         <MenuItem value="CODIGO">Código</MenuItem>
         <MenuItem value="TABELA">Tabela</MenuItem>
+        <MenuItem value="IMAGEM">Imagem</MenuItem>
       </TextField>
 
-      {value.textoApoioTipo !== 'TABELA' && (
+      {(value.textoApoioTipo === 'TEXTO' || value.textoApoioTipo === 'CODIGO') && (
         <TextField
           label={value.textoApoioTipo === 'CODIGO' ? 'Código de apoio' : 'Novo texto de apoio'}
           multiline
@@ -194,7 +150,18 @@ export default function TextoApoioEditor({ value, onChange }: Props) {
 
           <Stack spacing={1}>
             {tabela.linhas.map((linha, rowIndex) => (
-              <Box key={rowIndex} sx={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(tabela.colunas.length, 1)}, minmax(120px, 1fr)) auto`, gap: 1, alignItems: 'center' }}>
+              <Box
+                key={rowIndex}
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: {
+                    xs: 'minmax(0, 1fr)',
+                    md: `repeat(${Math.max(tabela.colunas.length, 1)}, minmax(120px, 1fr)) auto`,
+                  },
+                  gap: 1,
+                  alignItems: 'center',
+                }}
+              >
                 {tabela.colunas.map((coluna, colIndex) => (
                   <TextField
                     key={`${rowIndex}-${coluna}-${colIndex}`}
@@ -217,6 +184,7 @@ export default function TextoApoioEditor({ value, onChange }: Props) {
                       aria-label="Remover linha"
                       onClick={() => atualizarTabela({ ...tabela, linhas: tabela.linhas.filter((_, index) => index !== rowIndex) })}
                       disabled={tabela.linhas.length === 1}
+                      sx={{ justifySelf: { xs: 'end', md: 'auto' } }}
                     >
                       <DeleteIcon />
                     </IconButton>
@@ -238,6 +206,80 @@ export default function TextoApoioEditor({ value, onChange }: Props) {
           <Typography variant="caption" color="text.secondary">
             O conteúdo textual será salvo junto com a tabela para manter compatibilidade com versões antigas.
           </Typography>
+        </Stack>
+      )}
+
+      {value.textoApoioTipo === 'IMAGEM' && (
+        <Stack spacing={1.5}>
+          <Button
+            component="label"
+            variant="outlined"
+            startIcon={<UploadFileIcon />}
+            sx={{ alignSelf: 'flex-start', textTransform: 'none', fontWeight: 700 }}
+          >
+            Selecionar imagem
+            <Box
+              component="input"
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              hidden
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                onImagemArquivoChange(event.target.files?.[0] ?? null);
+                event.target.value = '';
+              }}
+            />
+          </Button>
+
+          {imagemArquivo && (
+            <Stack direction="row" spacing={1} alignItems="center" useFlexGap flexWrap="wrap">
+              <ImageOutlinedIcon color="action" />
+              <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{imagemArquivo.name}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {(imagemArquivo.size / 1024).toFixed(1)} KB
+              </Typography>
+              <Button
+                size="small"
+                color="error"
+                onClick={() => onImagemArquivoChange(null)}
+                sx={{ textTransform: 'none' }}
+              >
+                Remover
+              </Button>
+            </Stack>
+          )}
+
+          <TextField
+            label="Texto alternativo"
+            multiline
+            minRows={3}
+            fullWidth
+            value={value.textoApoioConteudo}
+            onChange={(e) => onChange('textoApoioConteudo', e.target.value)}
+            inputProps={{ maxLength: 500 }}
+            helperText={`${value.textoApoioConteudo.length}/500`}
+          />
+
+          {imagemArquivo && imagemPreview?.arquivo === imagemArquivo && (
+            <Box
+              component="img"
+              src={imagemPreview.url}
+              alt={value.textoApoioConteudo}
+              sx={{
+                display: 'block',
+                width: 'auto',
+                maxWidth: '100%',
+                maxHeight: 420,
+                mx: 'auto',
+                objectFit: 'contain',
+                border: '1px solid #dbe3ef',
+                borderRadius: 1,
+              }}
+            />
+          )}
+
+          {!imagemArquivo && (
+            <Alert severity="info">Selecione um arquivo PNG, JPEG ou WebP.</Alert>
+          )}
         </Stack>
       )}
     </Stack>

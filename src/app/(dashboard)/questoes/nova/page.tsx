@@ -23,8 +23,13 @@ import {
   listarTextosApoio,
 } from '@/services/catalogoService';
 import { criarQuestao } from '@/services/questoesService';
+import {
+  prepararTextoApoioQuestao,
+  validarTextoApoioQuestao,
+} from '@/services/textosApoioService';
 import type { CatalogoItem, TextoApoio } from '@/types/api';
 import TextoApoioEditor, { type TextoApoioEditorValue, type TextoApoioTipo } from '@/components/questoes/TextoApoioEditor';
+import TextoApoioViewer from '@/components/questoes/TextoApoioViewer';
 
 type ModalidadeUI = '' | 'Múltipla Escolha (A até E)' | 'Múltipla Escolha (A até D)' | 'Certo/Errado';
 
@@ -122,6 +127,8 @@ export default function NovaQuestaoPage() {
   const [bancas, setBancas] = useState<CatalogoItem[]>([]);
   const [instituicoes, setInstituicoes] = useState<CatalogoItem[]>([]);
   const [textosApoio, setTextosApoio] = useState<TextoApoio[]>([]);
+  const [imagemArquivo, setImagemArquivo] = useState<File | null>(null);
+  const textoApoioSelecionado = textosApoio.find((item) => String(item.id) === form.textoApoioId);
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -199,8 +206,9 @@ export default function NovaQuestaoPage() {
       setMsg({ type: 'error', text: 'Use texto de apoio existente ou cole um novo texto, não os dois ao mesmo tempo.' });
       return false;
     }
-    if (!form.textoApoioId && form.textoApoioTipo === 'TABELA' && form.textoApoioConteudo.trim() && !form.textoApoioJson.trim()) {
-      setMsg({ type: 'error', text: 'Converta ou preencha a tabela antes de salvar.' });
+    const erroTextoApoio = validarTextoApoioQuestao({ ...form, imagemArquivo });
+    if (erroTextoApoio) {
+      setMsg({ type: 'error', text: erroTextoApoio });
       return false;
     }
     const gabarito = form.gabarito.trim().toUpperCase();
@@ -225,29 +233,25 @@ export default function NovaQuestaoPage() {
     setMsg(null);
     if (!validarStep2()) return;
 
-    const payload = {
-      enunciado: form.enunciado.trim(),
-      questao: form.questao.trim(),
-      alternativas: montarAlternativas(form.modalidade, form),
-      textoApoioId: form.textoApoioId ? Number(form.textoApoioId) : null,
-      textoApoioTitulo: form.textoApoioId ? null : form.textoApoioTitulo.trim() || null,
-      textoApoioTipo: form.textoApoioId ? null : form.textoApoioTipo,
-      textoApoioConteudo: form.textoApoioId ? null : form.textoApoioConteudo.trim() || null,
-      textoApoioJson: form.textoApoioId ? null : form.textoApoioJson.trim() || null,
-      disciplinaId: Number(form.disciplinaId),
-      assuntoId: Number(form.assuntoId),
-      subassunto: form.subassunto.trim() || null,
-      bancaId: Number(form.bancaId),
-      instituicaoId: Number(form.instituicaoId),
-      cargo: form.cargo.trim(),
-      ano: Number(form.ano),
-      nivel: form.nivel.trim(),
-      modalidade: mapModalidadeToApi(form.modalidade),
-      gabarito: form.gabarito.trim().toUpperCase(),
-    };
-
     try {
       setSaving(true);
+      const textoApoio = await prepararTextoApoioQuestao({ ...form, imagemArquivo });
+      const payload = {
+        enunciado: form.enunciado.trim(),
+        questao: form.questao.trim(),
+        alternativas: montarAlternativas(form.modalidade, form),
+        ...textoApoio,
+        disciplinaId: Number(form.disciplinaId),
+        assuntoId: Number(form.assuntoId),
+        subassunto: form.subassunto.trim() || null,
+        bancaId: Number(form.bancaId),
+        instituicaoId: Number(form.instituicaoId),
+        cargo: form.cargo.trim(),
+        ano: Number(form.ano),
+        nivel: form.nivel.trim(),
+        modalidade: mapModalidadeToApi(form.modalidade),
+        gabarito: form.gabarito.trim().toUpperCase(),
+      };
       await criarQuestao(payload);
       setMsg({ type: 'success', text: 'Questão cadastrada com sucesso!' });
       setTimeout(() => router.push('/questoes'), 700);
@@ -329,10 +333,20 @@ export default function NovaQuestaoPage() {
                       <Typography variant="body2" color="text.secondary">Use quando várias questões compartilham o mesmo texto base. Selecione um existente ou cole um novo.</Typography>
                     </Box>
 
-                    <TextField select label="Usar texto de apoio existente" fullWidth value={form.textoApoioId} onChange={(e) => { setField('textoApoioId', e.target.value); if (e.target.value) { setField('textoApoioTitulo', ''); setField('textoApoioTipo', 'TEXTO'); setField('textoApoioConteudo', ''); setField('textoApoioJson', ''); } }}>
+                    <TextField select label="Usar texto de apoio existente" fullWidth value={form.textoApoioId} onChange={(e) => { setField('textoApoioId', e.target.value); if (e.target.value) { setField('textoApoioTitulo', ''); setField('textoApoioTipo', 'TEXTO'); setField('textoApoioConteudo', ''); setField('textoApoioJson', ''); setImagemArquivo(null); } }}>
                       <MenuItem value="">Nenhum</MenuItem>
-                      {textosApoio.map((item) => <MenuItem key={item.id} value={String(item.id)}>{item.titulo || `Texto de apoio #${item.id}`}</MenuItem>)}
+                      {textosApoio.map((item) => <MenuItem key={item.id} value={String(item.id)}>{item.titulo || `Texto de apoio #${item.id}`} · {item.tipo || 'TEXTO'}</MenuItem>)}
                     </TextField>
+
+                    {textoApoioSelecionado && (
+                      <TextoApoioViewer
+                        titulo={textoApoioSelecionado.titulo}
+                        tipo={textoApoioSelecionado.tipo}
+                        conteudo={textoApoioSelecionado.conteudo}
+                        conteudoJson={textoApoioSelecionado.conteudoJson}
+                        compact
+                      />
+                    )}
 
                     {!form.textoApoioId && (
                       <TextoApoioEditor
@@ -343,6 +357,8 @@ export default function NovaQuestaoPage() {
                           textoApoioJson: form.textoApoioJson,
                         }}
                         onChange={setTextoApoioField}
+                        imagemArquivo={imagemArquivo}
+                        onImagemArquivoChange={setImagemArquivo}
                       />
                     )}
                   </Stack>
