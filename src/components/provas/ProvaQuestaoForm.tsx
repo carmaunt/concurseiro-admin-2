@@ -28,11 +28,13 @@ import {
   listarTextosApoio,
 } from '@/services/catalogoService';
 import { criarQuestaoDaProva, obterProva } from '@/services/provasService';
+import { listarEnunciados } from '@/services/enunciadosService';
 import {
   prepararTextoApoioQuestao,
   validarTextoApoioQuestao,
 } from '@/services/textosApoioService';
-import type { CatalogoItem, ProvaDetalhe, TextoApoio } from '@/types/api';
+import type { CatalogoItem, Enunciado, ProvaDetalhe, TextoApoio } from '@/types/api';
+import EnunciadoSelector from '@/components/questoes/EnunciadoSelector';
 import TextoApoioEditor, { type TextoApoioEditorValue, type TextoApoioTipo } from '@/components/questoes/TextoApoioEditor';
 import TextoApoioViewer from '@/components/questoes/TextoApoioViewer';
 
@@ -45,6 +47,7 @@ type FormData = {
   textoApoioTipo: TextoApoioTipo;
   textoApoioConteudo: string;
   textoApoioJson: string;
+  enunciadoId: string;
   enunciado: string;
   questao: string;
   disciplinaId: string;
@@ -64,6 +67,7 @@ const defaults: FormData = {
   textoApoioTipo: 'TEXTO',
   textoApoioConteudo: '',
   textoApoioJson: '',
+  enunciadoId: '',
   enunciado: '',
   questao: '',
   disciplinaId: '',
@@ -123,6 +127,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   const [assuntos, setAssuntos] = useState<Item[]>([]);
   const [subassuntos, setSubassuntos] = useState<Item[]>([]);
   const [textosApoio, setTextosApoio] = useState<TextoApoio[]>([]);
+  const [enunciados, setEnunciados] = useState<Enunciado[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
@@ -144,6 +149,8 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   const textoApoioTipo = watch('textoApoioTipo');
   const textoApoioConteudo = watch('textoApoioConteudo');
   const textoApoioJson = watch('textoApoioJson');
+  const enunciadoId = watch('enunciadoId');
+  const enunciado = watch('enunciado');
   const gabaritoOptions = useMemo(() => gabaritos(prova?.modalidade), [prova?.modalidade]);
   const textoApoioSelecionado = textosApoio.find((item) => String(item.id) === textoApoioId);
 
@@ -168,14 +175,16 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     async function init() {
       try {
         setLoading(true);
-        const [provaData, disciplinasData, textosData] = await Promise.all([
+        const [provaData, disciplinasData, textosData, enunciadosData] = await Promise.all([
           obterProva(provaId),
           listarDisciplinas(),
           listarTextosApoio(),
+          listarEnunciados(),
         ]);
         setProva(provaData);
         setDisciplinas(disciplinasData);
         setTextosApoio(textosData);
+        setEnunciados(enunciadosData);
       } catch {
         setErro('Não foi possível carregar os dados da página.');
       } finally {
@@ -283,7 +292,8 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     try {
       const textoApoio = await prepararTextoApoioQuestao({ ...data, imagemArquivo });
       await criarQuestaoDaProva(provaId, {
-        enunciado: data.enunciado.trim(),
+        enunciado: data.enunciadoId ? null : data.enunciado.trim(),
+        enunciadoId: data.enunciadoId ? Number(data.enunciadoId) : null,
         questao: data.questao.trim(),
         alternativas: montarAlternativas(prova, data),
         ...textoApoio,
@@ -297,6 +307,8 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       reset({
         ...defaults,
         textoApoioId: data.textoApoioId,
+        enunciadoId: data.enunciadoId,
+        enunciado: data.enunciado,
         disciplinaId: data.disciplinaId,
         assuntoId: data.assuntoId,
         subassunto: data.subassunto,
@@ -393,13 +405,16 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
                     </Stack>
                   </Paper>
 
-                  <TextField
-                    label="Enunciado"
-                    multiline
-                    minRows={4}
-                    fullWidth
-                    helperText="Opcional. Use apenas para comandos curtos, como: Julgue o item a seguir."
-                    {...register('enunciado')}
+                  <EnunciadoSelector
+                    enunciados={enunciados}
+                    enunciadoId={enunciadoId}
+                    conteudo={enunciado}
+                    onChange={(novoEnunciadoId, conteudo) => {
+                      setValue('enunciadoId', novoEnunciadoId);
+                      setValue('enunciado', conteudo);
+                    }}
+                    error={!!errors.enunciado}
+                    helperText={errors.enunciado?.message}
                   />
 
                   <TextField

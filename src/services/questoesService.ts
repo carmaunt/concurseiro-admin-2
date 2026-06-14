@@ -2,7 +2,8 @@ import { api } from '@/services/api';
 import type { ApiResponse, QuestaoListItem, QuestoesPageData } from '@/types/api';
 
 export type CriarQuestaoPayload = {
-  enunciado: string;
+  enunciado: string | null;
+  enunciadoId: number | null;
   questao: string;
   alternativas: string;
   textoApoioId: number | null;

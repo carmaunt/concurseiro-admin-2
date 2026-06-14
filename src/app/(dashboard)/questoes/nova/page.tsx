@@ -23,11 +23,13 @@ import {
   listarTextosApoio,
 } from '@/services/catalogoService';
 import { criarQuestao } from '@/services/questoesService';
+import { listarEnunciados } from '@/services/enunciadosService';
 import {
   prepararTextoApoioQuestao,
   validarTextoApoioQuestao,
 } from '@/services/textosApoioService';
-import type { CatalogoItem, TextoApoio } from '@/types/api';
+import type { CatalogoItem, Enunciado, TextoApoio } from '@/types/api';
+import EnunciadoSelector from '@/components/questoes/EnunciadoSelector';
 import TextoApoioEditor, { type TextoApoioEditorValue, type TextoApoioTipo } from '@/components/questoes/TextoApoioEditor';
 import TextoApoioViewer from '@/components/questoes/TextoApoioViewer';
 
@@ -48,6 +50,7 @@ type FormState = {
   textoApoioTipo: TextoApoioTipo;
   textoApoioConteudo: string;
   textoApoioJson: string;
+  enunciadoId: string;
   enunciado: string;
   questao: string;
   gabarito: string;
@@ -75,6 +78,7 @@ const initialForm: FormState = {
   textoApoioTipo: 'TEXTO',
   textoApoioConteudo: '',
   textoApoioJson: '',
+  enunciadoId: '',
   enunciado: '',
   questao: '',
   gabarito: '',
@@ -127,6 +131,7 @@ export default function NovaQuestaoPage() {
   const [bancas, setBancas] = useState<CatalogoItem[]>([]);
   const [instituicoes, setInstituicoes] = useState<CatalogoItem[]>([]);
   const [textosApoio, setTextosApoio] = useState<TextoApoio[]>([]);
+  const [enunciados, setEnunciados] = useState<Enunciado[]>([]);
   const [imagemArquivo, setImagemArquivo] = useState<File | null>(null);
   const textoApoioSelecionado = textosApoio.find((item) => String(item.id) === form.textoApoioId);
 
@@ -142,16 +147,18 @@ export default function NovaQuestaoPage() {
     async function carregarBase() {
       try {
         setLoading(true);
-        const [disciplinasData, bancasData, instituicoesData, textosData] = await Promise.all([
+        const [disciplinasData, bancasData, instituicoesData, textosData, enunciadosData] = await Promise.all([
           listarDisciplinas(),
           listarBancas(),
           listarInstituicoes(),
           listarTextosApoio(),
+          listarEnunciados(),
         ]);
         setDisciplinas(disciplinasData);
         setBancas(bancasData);
         setInstituicoes(instituicoesData);
         setTextosApoio(textosData);
+        setEnunciados(enunciadosData);
       } catch (error: unknown) {
         setMsg({ type: 'error', text: getApiErrorMessage(error, 'Não foi possível carregar os dados iniciais.') });
       } finally {
@@ -198,7 +205,7 @@ export default function NovaQuestaoPage() {
   };
 
   const validarStep2 = () => {
-    if (!form.enunciado.trim() || !form.questao.trim()) {
+    if ((!form.enunciadoId && !form.enunciado.trim()) || !form.questao.trim()) {
       setMsg({ type: 'error', text: 'Preencha enunciado e questão.' });
       return false;
     }
@@ -237,7 +244,8 @@ export default function NovaQuestaoPage() {
       setSaving(true);
       const textoApoio = await prepararTextoApoioQuestao({ ...form, imagemArquivo });
       const payload = {
-        enunciado: form.enunciado.trim(),
+        enunciado: form.enunciadoId ? null : form.enunciado.trim(),
+        enunciadoId: form.enunciadoId ? Number(form.enunciadoId) : null,
         questao: form.questao.trim(),
         alternativas: montarAlternativas(form.modalidade, form),
         ...textoApoio,
@@ -364,7 +372,14 @@ export default function NovaQuestaoPage() {
                   </Stack>
                 </Paper>
 
-                <TextField label="Enunciado" multiline minRows={3} fullWidth value={form.enunciado} onChange={(e) => setField('enunciado', e.target.value)} />
+                <EnunciadoSelector
+                  enunciados={enunciados}
+                  enunciadoId={form.enunciadoId}
+                  conteudo={form.enunciado}
+                  onChange={(enunciadoId, conteudo) => {
+                    setForm((prev) => ({ ...prev, enunciadoId, enunciado: conteudo }));
+                  }}
+                />
                 <TextField label="Questão" multiline minRows={4} fullWidth value={form.questao} onChange={(e) => setField('questao', e.target.value)} />
 
                 {form.modalidade !== 'Certo/Errado' && (

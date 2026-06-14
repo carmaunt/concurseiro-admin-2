@@ -43,9 +43,15 @@ export type TextoApoio = {
   conteudoJson?: string | null;
 };
 
+export type Enunciado = {
+  id: number;
+  conteudo: string;
+};
+
 export type QuestaoListItem = {
   idQuestion: string;
   enunciado: string;
+  enunciadoId?: number | null;
   questao: string;
   alternativas: string | null;
   textoApoioId?: number | null;
