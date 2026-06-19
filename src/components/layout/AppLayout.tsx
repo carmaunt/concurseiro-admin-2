@@ -60,12 +60,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </ListItemButton>
 
         <ListItemButton
+          selected={pathname === '/analytics'}
+          onClick={() => {
+            if (isAdmin) router.push('/analytics');
+          }}
+          disabled={!isAdmin}
+          sx={{ borderRadius: 2, opacity: !isAdmin ? 0.5 : 1, mb: 0.5 }}
+        >
+          <ListItemText primary="Estatísticas" />
+        </ListItemButton>
+
+        <ListItemButton
           selected={pathname === '/usuarios'}
           onClick={() => {
             if (isAdmin) router.push('/usuarios');
           }}
           disabled={!isAdmin}
-          sx={{ borderRadius: 2, opacity: !isAdmin ? 0.5 : 1, cursor: !isAdmin ? 'not-allowed' : 'pointer' }}
+          sx={{ borderRadius: 2, opacity: !isAdmin ? 0.5 : 1 }}
         >
           <ListItemText primary="Usuários" />
         </ListItemButton>
