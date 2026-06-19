@@ -53,6 +53,7 @@ type FormState = {
   enunciadoId: string;
   enunciado: string;
   questao: string;
+  explicacao: string;
   gabarito: string;
   altA: string;
   altB: string;
@@ -81,6 +82,7 @@ const initialForm: FormState = {
   enunciadoId: '',
   enunciado: '',
   questao: '',
+  explicacao: '',
   gabarito: '',
   altA: '',
   altB: '',
@@ -248,6 +250,7 @@ export default function NovaQuestaoPage() {
         enunciadoId: form.enunciadoId ? Number(form.enunciadoId) : null,
         questao: form.questao.trim(),
         alternativas: montarAlternativas(form.modalidade, form),
+        explicacao: form.explicacao.trim() || null,
         ...textoApoio,
         disciplinaId: Number(form.disciplinaId),
         assuntoId: Number(form.assuntoId),
@@ -381,6 +384,16 @@ export default function NovaQuestaoPage() {
                   }}
                 />
                 <TextField label="Questão" multiline minRows={4} fullWidth value={form.questao} onChange={(e) => setField('questao', e.target.value)} />
+
+                <TextField
+                  label="Explicação da questão"
+                  helperText="Será exibida no app somente depois que o usuário tentar resolver a questão."
+                  multiline
+                  minRows={5}
+                  fullWidth
+                  value={form.explicacao}
+                  onChange={(e) => setField('explicacao', e.target.value)}
+                />
 
                 {form.modalidade !== 'Certo/Errado' && (
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>

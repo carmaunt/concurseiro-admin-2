@@ -268,6 +268,13 @@ export default function QuestoesPage() {
                       <Typography variant="body1" sx={{ fontSize: { xs: '1rem', md: '1.05rem' }, fontWeight: 600, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{questaoSelecionada.questao}</Typography>
                     </Paper>
 
+                    {questaoSelecionada.explicacao && (
+                      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, borderColor: '#dbeafe', backgroundColor: '#eff6ff' }}>
+                        <Typography variant="subtitle2" fontWeight={800} sx={{ color: '#1e40af', mb: 1 }}>Explicação</Typography>
+                        <Typography variant="body1" sx={{ color: '#334155', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{questaoSelecionada.explicacao}</Typography>
+                      </Paper>
+                    )}
+
                     {isGabaritoAnulada(questaoSelecionada.gabarito) && (
                       <Alert severity="warning" sx={{ borderRadius: 2 }}>Questão anulada.</Alert>
                     )}

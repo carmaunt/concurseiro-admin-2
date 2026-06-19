@@ -54,6 +54,7 @@ export type QuestaoListItem = {
   enunciadoId?: number | null;
   questao: string;
   alternativas: string | null;
+  explicacao?: string | null;
   textoApoioId?: number | null;
   textoApoioTitulo?: string | null;
   textoApoioConteudo?: string | null;

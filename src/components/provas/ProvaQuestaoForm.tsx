@@ -50,6 +50,7 @@ type FormData = {
   enunciadoId: string;
   enunciado: string;
   questao: string;
+  explicacao: string;
   disciplinaId: string;
   assuntoId: string;
   subassunto: string;
@@ -70,6 +71,7 @@ const defaults: FormData = {
   enunciadoId: '',
   enunciado: '',
   questao: '',
+  explicacao: '',
   disciplinaId: '',
   assuntoId: '',
   subassunto: '',
@@ -296,6 +298,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
         enunciadoId: data.enunciadoId ? Number(data.enunciadoId) : null,
         questao: data.questao.trim(),
         alternativas: montarAlternativas(prova, data),
+        explicacao: data.explicacao.trim() || null,
         ...textoApoio,
         disciplinaId: Number(data.disciplinaId),
         assuntoId: Number(data.assuntoId),
@@ -425,6 +428,15 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
                     error={!!errors.questao}
                     helperText={errors.questao?.message}
                     {...register('questao', { required: 'Informe o texto da questão.' })}
+                  />
+
+                  <TextField
+                    label="Explicação da questão"
+                    helperText="Será exibida no app somente depois que o usuário tentar resolver a questão."
+                    multiline
+                    minRows={5}
+                    fullWidth
+                    {...register('explicacao')}
                   />
 
                   {certoErrado(prova?.modalidade) ? (

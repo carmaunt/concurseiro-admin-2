@@ -16,6 +16,7 @@ export type CriarQuestaoProvaPayload = {
   enunciadoId: number | null;
   questao: string;
   alternativas: string;
+  explicacao: string | null;
   textoApoioId: number | null;
   textoApoioTitulo: string | null;
   textoApoioTipo: string | null;
