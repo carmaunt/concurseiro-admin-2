@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { buscarAnalyticsDashboard } from '@/services/analyticsService';
 
@@ -36,7 +37,7 @@ export function resolveAnalyticsRange(period: AnalyticsPeriod): AnalyticsRange {
 }
 
 export function useAnalyticsDashboard(period: AnalyticsPeriod) {
-  const range = resolveAnalyticsRange(period);
+  const range = useMemo(() => resolveAnalyticsRange(period), [period]);
 
   return useQuery({
     queryKey: analyticsKeys.dashboard(range),
