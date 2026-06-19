@@ -97,6 +97,32 @@ export type ProvaDetalhe = ProvaListItem & {
   nivel: string;
 };
 
+export type AnalyticsSummary = {
+  totalDevices: number;
+  activeUsersToday: number;
+  activeUsersInPeriod: number;
+  onlineNow: number;
+  questionsAnsweredToday: number;
+  questionsAnsweredInPeriod: number;
+  averageInteractionSeconds: number;
+};
+
+export type AnalyticsRankingItem = {
+  label: string;
+  total: number;
+};
+
+export type AnalyticsDashboard = {
+  from: string;
+  to: string;
+  summary: AnalyticsSummary;
+  topScreens: AnalyticsRankingItem[];
+  topFilters: AnalyticsRankingItem[];
+  topDisciplinas: AnalyticsRankingItem[];
+  topAssuntos: AnalyticsRankingItem[];
+  topSubassuntos: AnalyticsRankingItem[];
+};
+
 export type QuestoesPageData = PageResponse<QuestaoListItem>;
 export type ProvasPageData = PageResponse<ProvaListItem>;
 export type UsuariosPageData = OptionalPageResponse<Usuario>;
