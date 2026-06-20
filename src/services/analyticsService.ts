@@ -13,7 +13,20 @@ export type AnalyticsDashboard = {
   dailyTrend: Array<{ date:string; active:number; sessions:number; questions:number; accuracy:number }>;
 };
 export type AnalyticsFilters = { period:'today'|'7d'|'30d'|'current_month'|'custom'; startDate?:string; endDate?:string; disciplinaId?:number; assuntoId?:number; subassuntoId?:number; bancaId?:number; instituicaoId?:number; provaId?:number };
+export type AnalyticsInsights = {
+  period:{label:string;startDate:string;endDate:string}; previousPeriod:{label:string;startDate:string;endDate:string};
+  status:'GOOD'|'BAD'|'STABLE'|'INSUFFICIENT_DATA'; score:number; previousScore:number|null; scoreChangePercent:number|null;
+  confidence:'HIGH'|'MEDIUM'|'LOW'; confidenceReason:string; title:string; summary:string;
+  possibleAutomatedTraffic:boolean; automatedTrafficReason:string|null;
+  metrics:Record<string,{current:number;previous:number;changePercent:number|null;trend:'UP'|'DOWN'|'STABLE'|'NO_BASE';interpretation:string}>;
+  drivers:Array<{type:'positive'|'negative'|'neutral'|'warning';title:string;description:string;metric:string;currentValue:number|string|boolean;previousValue?:number|string|boolean;changePercent:number|null;severity:'low'|'medium'|'high'}>;
+  recommendations:Array<{priority:'high'|'medium'|'low';title:string;description:string;relatedMetric:string}>;
+};
 export async function obterAnalyticsDashboard(filters: AnalyticsFilters) {
   const response = await api.get<ApiResponse<AnalyticsDashboard>|AnalyticsDashboard>('/api/v1/admin/analytics/dashboard',{params:filters});
   const payload=response.data; return ('data' in payload ? payload.data : payload) as AnalyticsDashboard;
+}
+export async function obterAnalyticsInsights(filters:AnalyticsFilters){
+  const response=await api.get<ApiResponse<AnalyticsInsights>|AnalyticsInsights>('/api/v1/admin/analytics/insights',{params:filters});
+  const payload=response.data; return ('data' in payload?payload.data:payload) as AnalyticsInsights;
 }
