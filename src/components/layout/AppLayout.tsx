@@ -79,7 +79,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           disabled={!isAdmin}
           sx={{ borderRadius: 2, mt: 0.5, opacity: !isAdmin ? 0.5 : 1, cursor: !isAdmin ? 'not-allowed' : 'pointer' }}
         >
-          <ListItemText primary="Analytics" />
+          <ListItemText primary="Métricas" />
         </ListItemButton>
       </List>
 
