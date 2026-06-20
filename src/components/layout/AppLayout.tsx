@@ -16,6 +16,7 @@ import {
   useTheme,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 import { useRouter, usePathname } from 'next/navigation';
 import { useCurrentUserRole } from '@/hooks/useAuthSession';
 import { clearAuthSession } from '@/services/auth';
@@ -101,7 +102,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           zIndex: (theme) => theme.zIndex.drawer + 1,
           height: headerHeight,
           justifyContent: 'center',
-          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.08)',
+          backgroundColor: '#1e344d',
+          backgroundImage: 'linear-gradient(90deg, #122033 0%, #1e344d 58%, #263f5d 100%)',
+          boxShadow: '0 8px 24px rgba(18, 32, 51, 0.16)',
         }}
       >
         <Toolbar sx={{ minHeight: `${headerHeight}px !important`, px: { xs: 2, sm: 3 } }}>
@@ -110,9 +113,42 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <MenuIcon />
             </IconButton>
           )}
-          <Typography variant="h6" fontWeight={700} noWrap>
-            Painel Admin
-          </Typography>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
+            <Box
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: 2,
+                display: 'grid',
+                placeItems: 'center',
+                bgcolor: 'rgba(255,255,255,0.10)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                flexShrink: 0,
+              }}
+            >
+              <MenuBookOutlinedIcon sx={{ fontSize: 22, color: '#f5edd5' }} />
+            </Box>
+
+            <Box sx={{ minWidth: 0 }}>
+              <Typography variant="h6" fontWeight={800} noWrap sx={{ lineHeight: 1.1 }}>
+                Painel Admin
+              </Typography>
+              <Typography
+                variant="caption"
+                noWrap
+                sx={{
+                  display: { xs: 'none', sm: 'block' },
+                  color: 'rgba(248,250,252,0.72)',
+                  letterSpacing: 1.4,
+                  fontWeight: 700,
+                  lineHeight: 1.1,
+                }}
+              >
+                CONCURSEIRO
+              </Typography>
+            </Box>
+          </Box>
         </Toolbar>
       </AppBar>
 

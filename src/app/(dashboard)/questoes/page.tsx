@@ -120,7 +120,21 @@ export default function QuestoesPage() {
             fullWidth={isMobile}
             variant="contained"
             onClick={() => router.push('/questoes/nova')}
-            sx={{ borderRadius: 2.5, px: 2.5, py: 1.15, fontWeight: 700, textTransform: 'none', boxShadow: 'none', minWidth: { sm: 150 } }}
+            sx={{
+              borderRadius: 2.5,
+              px: 2.5,
+              py: 1.15,
+              fontWeight: 700,
+              textTransform: 'none',
+              backgroundColor: '#1e344d',
+              color: '#f8fafc',
+              boxShadow: '0 10px 24px rgba(18, 32, 51, 0.18)',
+              minWidth: { sm: 150 },
+              '&:hover': {
+                backgroundColor: '#122033',
+                boxShadow: '0 12px 28px rgba(18, 32, 51, 0.24)',
+              },
+            }}
           >
             Nova questão
           </Button>
