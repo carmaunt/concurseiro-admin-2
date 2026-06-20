@@ -17,7 +17,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import ShieldOutlinedIcon from '@mui/icons-material/ShieldOutlined';
+import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import { API_BASE_URL, getApiErrorMessage, getApiErrorStatus } from '@/services/api';
 import { saveAuthSession } from '@/services/auth';
 import { login } from '@/services/authService';
@@ -41,7 +42,7 @@ export default function LoginPage() {
     setErro('');
 
     if (!API_BASE_URL) {
-      setErro('API não configurada para este ambiente. Verifique NEXT_PUBLIC_API_URL no deploy.');
+      setErro('Ambiente não configurado corretamente. Entre em contato com o responsável pelo sistema.');
       return;
     }
 
@@ -52,7 +53,7 @@ export default function LoginPage() {
       });
 
       if (!email || !role) {
-        setErro('Dados de sessão não encontrados na resposta.');
+        setErro('Não foi possível validar sua sessão. Tente novamente.');
         return;
       }
 
@@ -68,7 +69,7 @@ export default function LoginPage() {
       }
 
       if (status === 403) {
-        setErro('Usuário ainda não aprovado pelo administrador.');
+        setErro('Seu acesso ao painel ainda não foi aprovado.');
         return;
       }
 
@@ -83,7 +84,7 @@ export default function LoginPage() {
         display: 'flex',
         alignItems: 'center',
         background:
-          'linear-gradient(135deg, #f4f6fb 0%, #eef2ff 50%, #f8fafc 100%)',
+          'linear-gradient(135deg, #f8fafc 0%, #eef2f7 48%, #f7f2df 100%)',
       }}
     >
       <Container maxWidth="lg">
@@ -93,8 +94,9 @@ export default function LoginPage() {
             gridTemplateColumns: { xs: '1fr', md: '1.05fr 0.95fr' },
             borderRadius: 4,
             overflow: 'hidden',
-            boxShadow: '0 20px 60px rgba(15, 23, 42, 0.12)',
+            boxShadow: '0 24px 70px rgba(15, 23, 42, 0.14)',
             bgcolor: '#fff',
+            border: '1px solid rgba(15, 23, 42, 0.06)',
           }}
         >
           <Box
@@ -103,46 +105,61 @@ export default function LoginPage() {
               flexDirection: 'column',
               justifyContent: 'center',
               p: 7,
-              color: '#fff',
+              color: '#f8fafc',
               background:
-                'linear-gradient(160deg, #0f172a 0%, #1e3a8a 55%, #2563eb 100%)',
+                'linear-gradient(160deg, #122033 0%, #1e344d 58%, #263f5d 100%)',
             }}
           >
             <Box
               sx={{
-                width: 56,
-                height: 56,
+                width: 76,
+                height: 76,
                 borderRadius: 3,
                 display: 'grid',
                 placeItems: 'center',
-                bgcolor: 'rgba(255,255,255,0.14)',
+                bgcolor: 'rgba(255,255,255,0.10)',
+                border: '1px solid rgba(255,255,255,0.18)',
                 mb: 3,
               }}
             >
-              <ShieldOutlinedIcon fontSize="large" />
+              <MenuBookOutlinedIcon sx={{ fontSize: 42, color: '#f5edd5' }} />
             </Box>
 
-            <Typography variant="h3" fontWeight={700} mb={2}>
-              Admin Panel
+            <Typography variant="overline" sx={{ letterSpacing: 2.4, color: '#d8e2ef', fontWeight: 700 }}>
+              CONCURSEIRO
             </Typography>
 
-            <Typography variant="h6" sx={{ opacity: 0.9, lineHeight: 1.6 }}>
-              Acesse o painel administrativo com segurança e gerencie usuários,
-              questões e provas em um só lugar.
+            <Typography variant="h3" fontWeight={800} mt={1} mb={2}>
+              Painel administrativo
             </Typography>
 
-            <Divider sx={{ my: 4, borderColor: 'rgba(255,255,255,0.16)' }} />
+            <Typography variant="h6" sx={{ opacity: 0.9, lineHeight: 1.65, maxWidth: 520 }}>
+              Ambiente interno para organização, revisão e acompanhamento da base de questões do projeto.
+            </Typography>
 
-            <Stack spacing={1.25}>
-              <Typography sx={{ opacity: 0.9 }}>
-                • Aprovação e gerenciamento de usuários
-              </Typography>
-              <Typography sx={{ opacity: 0.9 }}>
-                • Controle de questões e provas
-              </Typography>
-              <Typography sx={{ opacity: 0.9 }}>
-                • Acesso autenticado com JWT
-              </Typography>
+            <Divider sx={{ my: 4, borderColor: 'rgba(255,255,255,0.14)' }} />
+
+            <Stack spacing={1.75}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <CheckCircleOutlineIcon sx={{ color: '#b8cbbd' }} />
+                <Typography sx={{ opacity: 0.92 }}>
+                  Curadoria e padronização do conteúdo.
+                </Typography>
+              </Stack>
+
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <CheckCircleOutlineIcon sx={{ color: '#b8cbbd' }} />
+                <Typography sx={{ opacity: 0.92 }}>
+                  Organização de provas, bancas, disciplinas e assuntos.
+                </Typography>
+              </Stack>
+
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <CheckCircleOutlineIcon sx={{ color: '#b8cbbd' }} />
+                <Typography sx={{ opacity: 0.92 }}>
+                  Acesso restrito a usuários autorizados.
+                </Typography>
+              </Stack>
             </Stack>
           </Box>
 
@@ -161,25 +178,30 @@ export default function LoginPage() {
                 <Box sx={{ display: { xs: 'flex', md: 'none' }, mb: 3 }}>
                   <Box
                     sx={{
-                      width: 48,
-                      height: 48,
+                      width: 56,
+                      height: 56,
                       borderRadius: 3,
                       display: 'grid',
                       placeItems: 'center',
-                      bgcolor: '#e8f0fe',
-                      color: '#1d4ed8',
+                      bgcolor: '#eef2f7',
+                      color: '#1e344d',
+                      border: '1px solid #dde5ee',
                     }}
                   >
-                    <ShieldOutlinedIcon />
+                    <MenuBookOutlinedIcon />
                   </Box>
                 </Box>
 
-                <Typography variant="h4" fontWeight={700} mb={1}>
-                  Entrar
+                <Typography variant="overline" sx={{ letterSpacing: 2, color: 'text.secondary', fontWeight: 700 }}>
+                  ACESSO INTERNO
                 </Typography>
 
-                <Typography color="text.secondary" mb={4}>
-                  Informe suas credenciais para acessar o painel.
+                <Typography variant="h4" fontWeight={800} mt={1} mb={1}>
+                  Entrar no painel
+                </Typography>
+
+                <Typography color="text.secondary" mb={4} sx={{ lineHeight: 1.65 }}>
+                  Use suas credenciais autorizadas para acessar a administração do Concurseiro.
                 </Typography>
 
                 {erro && (
@@ -200,6 +222,7 @@ export default function LoginPage() {
                     type="email"
                     fullWidth
                     required
+                    autoComplete="email"
                     {...register('email')}
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -214,6 +237,7 @@ export default function LoginPage() {
                     type="password"
                     fullWidth
                     required
+                    autoComplete="current-password"
                     {...register('senha')}
                     sx={{
                       '& .MuiOutlinedInput-root': {
@@ -234,10 +258,10 @@ export default function LoginPage() {
                       borderRadius: 2.5,
                       fontWeight: 700,
                       textTransform: 'none',
-                      boxShadow: '0 10px 24px rgba(37, 99, 235, 0.28)',
+                      boxShadow: '0 12px 28px rgba(30, 52, 77, 0.24)',
                     }}
                   >
-                    {isSubmitting ? 'Entrando...' : 'Entrar'}
+                    {isSubmitting ? 'Validando acesso...' : 'Acessar painel'}
                   </Button>
                 </Box>
 
@@ -247,17 +271,17 @@ export default function LoginPage() {
                   textAlign="center"
                   mt={3}
                 >
-                  Ainda não tem acesso?{' '}
+                  Precisa de acesso administrativo?{' '}
                   <Box
                     component={Link}
                     href="/cadastro"
                     sx={{
                       color: 'primary.main',
-                      fontWeight: 600,
+                      fontWeight: 700,
                       textDecoration: 'none',
                     }}
                   >
-                    Solicitar cadastro
+                    Solicitar acesso
                   </Box>
                 </Typography>
               </Box>
