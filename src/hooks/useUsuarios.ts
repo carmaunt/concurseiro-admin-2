@@ -3,16 +3,18 @@ import {
   ativarUsuario,
   excluirUsuario,
   listarUsuarios,
+  type ListarUsuariosParams,
 } from '@/services/usuariosService';
 
 export const usuariosKeys = {
   all: ['usuarios'] as const,
+  list: (params: ListarUsuariosParams) => [...usuariosKeys.all, params] as const,
 };
 
-export function useUsuarios() {
+export function useUsuarios(params: ListarUsuariosParams = {}) {
   return useQuery({
-    queryKey: usuariosKeys.all,
-    queryFn: listarUsuarios,
+    queryKey: usuariosKeys.list(params),
+    queryFn: () => listarUsuarios(params),
   });
 }
 

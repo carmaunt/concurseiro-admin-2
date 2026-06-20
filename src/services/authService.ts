@@ -30,3 +30,15 @@ export async function register(payload: RegisterPayload) {
 export async function logout() {
   await api.post('/api/v1/auth/logout');
 }
+
+
+export async function me() {
+  const response = await api.get('/api/v1/auth/me');
+  const data = unwrapApiData<unknown>(response.data);
+
+  return {
+    email: stringProp(data, ['email']),
+    role: parseUserRole(stringProp(data, ['role'])),
+    tipoConta: stringProp(data, ['tipoConta']),
+  };
+}

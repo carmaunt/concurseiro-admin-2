@@ -20,6 +20,10 @@ export type PageResponse<T> = {
 export type OptionalPageResponse<T> = {
   content: T[];
   page?: PageInfo;
+  size?: number;
+  number?: number;
+  totalElements?: number;
+  totalPages?: number;
 };
 
 export type Usuario = {
@@ -28,6 +32,7 @@ export type Usuario = {
   email: string;
   role: 'ADMIN' | 'VISITANTE' | 'USUARIO_FINAL';
   status: 'ATIVO' | 'PENDENTE';
+  tipoConta?: 'PAINEL' | 'APP';
 };
 
 export type CatalogoItem = {

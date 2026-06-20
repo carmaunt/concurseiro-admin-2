@@ -13,6 +13,7 @@ import {
   TableBody,
   TableCell,
   TableHead,
+  TablePagination,
   TableRow,
   Tooltip,
   Typography,
@@ -34,8 +35,38 @@ import { getApiErrorMessage } from '@/services/api';
 
 type Feedback = { type: 'success' | 'error'; message: string } | null;
 
+function getRoleLabel(role: string) {
+  if (role === 'ADMIN') return 'Admin';
+  if (role === 'VISITANTE') return 'Visitante';
+  if (role === 'USUARIO_FINAL') return 'Usuário do App';
+  return role;
+}
+
+function getRoleStyle(role: string) {
+  if (role === 'ADMIN') {
+    return { backgroundColor: '#1976d2', color: '#fff' };
+  }
+
+  if (role === 'USUARIO_FINAL') {
+    return { backgroundColor: '#e8f5e9', color: '#1b5e20', border: '1px solid #c8e6c9' };
+  }
+
+  return { backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' };
+}
+
+function getTotalElements(data: unknown, fallback: number) {
+  if (!data || typeof data !== 'object') return fallback;
+
+  const page = 'page' in data ? (data as { page?: { totalElements?: number } }).page : undefined;
+  const rootTotal = 'totalElements' in data ? (data as { totalElements?: number }).totalElements : undefined;
+
+  return page?.totalElements ?? rootTotal ?? fallback;
+}
+
 export default function UsuariosPage() {
-  const { data, isLoading, isError, error, refetch } = useUsuarios();
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const { data, isLoading, isError, error, refetch } = useUsuarios({ page, size: rowsPerPage });
   const [usuarioParaExcluir, setUsuarioParaExcluir] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
 
@@ -65,19 +96,29 @@ export default function UsuariosPage() {
   });
 
   const usuarios = useMemo(() => data?.content ?? [], [data?.content]);
+  const totalElements = getTotalElements(data, usuarios.length);
 
   const stats = useMemo(() => {
-    const total = usuarios.length;
+    const total = totalElements;
     const ativos = usuarios.filter((u) => u.status === 'ATIVO').length;
     const pendentes = usuarios.filter((u) => u.status === 'PENDENTE').length;
     const admins = usuarios.filter((u) => u.role === 'ADMIN').length;
 
     return { total, ativos, pendentes, admins };
-  }, [usuarios]);
+  }, [usuarios, totalElements]);
 
   const confirmarExclusao = () => {
     if (!usuarioParaExcluir) return;
     deletarUsuario.mutate(usuarioParaExcluir);
+  };
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(Number.parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   if (isLoading) {
@@ -122,7 +163,7 @@ export default function UsuariosPage() {
             <Stack direction="row" spacing={1.5} alignItems="center">
               <GroupOutlinedIcon color="primary" />
               <Box>
-                <Typography variant="body2" color="text.secondary">Total</Typography>
+                <Typography variant="body2" color="text.secondary">Total painel</Typography>
                 <Typography variant="h5" fontWeight={700}>{stats.total}</Typography>
               </Box>
             </Stack>
@@ -132,7 +173,7 @@ export default function UsuariosPage() {
             <Stack direction="row" spacing={1.5} alignItems="center">
               <VerifiedUserOutlinedIcon color="success" />
               <Box>
-                <Typography variant="body2" color="text.secondary">Ativos</Typography>
+                <Typography variant="body2" color="text.secondary">Ativos nesta página</Typography>
                 <Typography variant="h5" fontWeight={700}>{stats.ativos}</Typography>
               </Box>
             </Stack>
@@ -142,7 +183,7 @@ export default function UsuariosPage() {
             <Stack direction="row" spacing={1.5} alignItems="center">
               <PendingActionsOutlinedIcon sx={{ color: '#ed6c02' }} />
               <Box>
-                <Typography variant="body2" color="text.secondary">Pendentes</Typography>
+                <Typography variant="body2" color="text.secondary">Pendentes nesta página</Typography>
                 <Typography variant="h5" fontWeight={700}>{stats.pendentes}</Typography>
               </Box>
             </Stack>
@@ -152,7 +193,7 @@ export default function UsuariosPage() {
             <Stack direction="row" spacing={1.5} alignItems="center">
               <VerifiedUserOutlinedIcon sx={{ color: '#1565c0' }} />
               <Box>
-                <Typography variant="body2" color="text.secondary">Admins</Typography>
+                <Typography variant="body2" color="text.secondary">Admins nesta página</Typography>
                 <Typography variant="h5" fontWeight={700}>{stats.admins}</Typography>
               </Box>
             </Stack>
@@ -185,16 +226,14 @@ export default function UsuariosPage() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Chip
-                        label={user.role === 'ADMIN' ? 'Admin' : 'Visitante'}
+                        label={getRoleLabel(user.role)}
                         size="small"
                         sx={{
-                          minWidth: 100,
+                          minWidth: 120,
                           px: 1,
                           justifyContent: 'center',
                           fontWeight: 600,
-                          ...(user.role === 'ADMIN'
-                            ? { backgroundColor: '#1976d2', color: '#fff' }
-                            : { backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0' }),
+                          ...getRoleStyle(user.role),
                         }}
                       />
                     </TableCell>
@@ -247,6 +286,20 @@ export default function UsuariosPage() {
               )}
             </TableBody>
           </Table>
+
+          <TablePagination
+            component="div"
+            count={totalElements}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[10, 20, 50]}
+            labelRowsPerPage="Itens por página"
+            labelDisplayedRows={({ from, to, count }) =>
+              `${from}-${to} de ${count !== -1 ? count : `mais de ${to}`}`
+            }
+          />
         </ListPanel>
       </Stack>
 
