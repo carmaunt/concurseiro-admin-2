@@ -258,7 +258,17 @@ export default function LoginPage() {
                       borderRadius: 2.5,
                       fontWeight: 700,
                       textTransform: 'none',
-                      boxShadow: '0 12px 28px rgba(30, 52, 77, 0.24)',
+                      backgroundColor: '#1e344d',
+                      color: '#f8fafc',
+                      boxShadow: '0 12px 28px rgba(18, 32, 51, 0.24)',
+                      '&:hover': {
+                        backgroundColor: '#122033',
+                        boxShadow: '0 14px 32px rgba(18, 32, 51, 0.30)',
+                      },
+                      '&.Mui-disabled': {
+                        backgroundColor: '#6b7c8f',
+                        color: '#f8fafc',
+                      },
                     }}
                   >
                     {isSubmitting ? 'Validando acesso...' : 'Acessar painel'}
@@ -276,9 +286,13 @@ export default function LoginPage() {
                     component={Link}
                     href="/cadastro"
                     sx={{
-                      color: 'primary.main',
+                      color: '#1e344d',
                       fontWeight: 700,
                       textDecoration: 'none',
+                      '&:hover': {
+                        color: '#122033',
+                        textDecoration: 'underline',
+                      },
                     }}
                   >
                     Solicitar acesso
