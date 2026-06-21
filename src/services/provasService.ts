@@ -108,5 +108,6 @@ export async function listarQuestoesDaProva(provaId: number) {
 }
 
 export async function criarQuestaoDaProva(provaId: number, payload: CriarQuestaoProvaPayload) {
-  await api.post(`/api/v1/provas/${provaId}/questoes`, payload);
+  const response = await api.post<ApiResponse<QuestaoListItem> | QuestaoListItem>(`/api/v1/provas/${provaId}/questoes`, payload);
+  return unwrapApiData<QuestaoListItem>(response.data);
 }
