@@ -3,38 +3,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  CircularProgress,
-  Container,
-  MenuItem,
-  Paper,
-  Stack,
-  TextField,
-  Typography,
-} from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, CircularProgress, Container, MenuItem, Paper, Stack, TextField, Typography } from '@mui/material';
 import { getApiErrorMessage } from '@/services/api';
-import {
-  criarAssuntoCatalogo,
-  criarItemCatalogo,
-  criarSubassuntoCatalogo,
-  listarAssuntosPorDisciplina,
-  listarDisciplinas,
-  listarSubassuntosPorAssunto,
-  listarTextosApoio,
-} from '@/services/catalogoService';
+import { criarAssuntoCatalogo, criarItemCatalogo, criarSubassuntoCatalogo, listarAssuntosPorDisciplina, listarDisciplinas, listarSubassuntosPorAssunto, listarTextosApoio } from '@/services/catalogoService';
 import { criarQuestaoDaProva, obterProva } from '@/services/provasService';
 import { listarEnunciados } from '@/services/enunciadosService';
-import {
-  prepararTextoApoioQuestao,
-  validarTextoApoioQuestao,
-} from '@/services/textosApoioService';
+import { prepararImagemQuestao, prepararTextoApoioQuestao, validarImagemQuestao, validarTextoApoioQuestao } from '@/services/textosApoioService';
 import type { CatalogoItem, Enunciado, ProvaDetalhe, TextoApoio } from '@/types/api';
 import EnunciadoSelector from '@/components/questoes/EnunciadoSelector';
+import QuestionImageInput from '@/components/questoes/QuestionImageInput';
 import TextoApoioEditor, { type TextoApoioEditorValue, type TextoApoioTipo } from '@/components/questoes/TextoApoioEditor';
 import TextoApoioViewer from '@/components/questoes/TextoApoioViewer';
 
@@ -50,6 +27,7 @@ type FormData = {
   enunciadoId: string;
   enunciado: string;
   questao: string;
+  questaoImagemConteudo: string;
   explicacao: string;
   disciplinaId: string;
   assuntoId: string;
@@ -71,6 +49,7 @@ const defaults: FormData = {
   enunciadoId: '',
   enunciado: '',
   questao: '',
+  questaoImagemConteudo: '',
   explicacao: '',
   disciplinaId: '',
   assuntoId: '',
@@ -87,12 +66,7 @@ const ADD_NEW = '__ADD_NEW__';
 const GABARITO_ANULADA = 'X';
 
 function norm(value?: string) {
-  return (value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toUpperCase()
-    .replace(/\s+/g, '_')
-    .replace(/\//g, '_');
+  return (value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, '_').replace(/\//g, '_');
 }
 
 function certoErrado(value?: string) {
@@ -101,9 +75,7 @@ function certoErrado(value?: string) {
 
 function gabaritos(value?: string) {
   if (certoErrado(value)) return ['CERTO', 'ERRADO', GABARITO_ANULADA];
-  return norm(value) === 'A_D'
-    ? ['A', 'B', 'C', 'D', GABARITO_ANULADA]
-    : ['A', 'B', 'C', 'D', 'E', GABARITO_ANULADA];
+  return norm(value) === 'A_D' ? ['A', 'B', 'C', 'D', GABARITO_ANULADA] : ['A', 'B', 'C', 'D', 'E', GABARITO_ANULADA];
 }
 
 function labelGabarito(gabarito: string) {
@@ -134,15 +106,9 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   const [erro, setErro] = useState('');
   const [sucesso, setSucesso] = useState('');
   const [imagemArquivo, setImagemArquivo] = useState<File | null>(null);
+  const [questionImageFile, setQuestionImageFile] = useState<File | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    reset,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({ defaultValues: defaults });
+  const { register, handleSubmit, watch, reset, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({ defaultValues: defaults });
 
   const disciplinaId = watch('disciplinaId');
   const assuntoId = watch('assuntoId');
@@ -153,36 +119,19 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   const textoApoioJson = watch('textoApoioJson');
   const enunciadoId = watch('enunciadoId');
   const enunciado = watch('enunciado');
+  const questaoImagemConteudo = watch('questaoImagemConteudo');
   const gabaritoOptions = useMemo(() => gabaritos(prova?.modalidade), [prova?.modalidade]);
   const textoApoioSelecionado = textosApoio.find((item) => String(item.id) === textoApoioId);
 
   const setTextoApoioField = <K extends keyof TextoApoioEditorValue>(key: K, value: TextoApoioEditorValue[K]) => {
-    switch (key) {
-      case 'textoApoioTitulo':
-        setValue('textoApoioTitulo', value);
-        break;
-      case 'textoApoioTipo':
-        setValue('textoApoioTipo', value as TextoApoioTipo);
-        break;
-      case 'textoApoioConteudo':
-        setValue('textoApoioConteudo', value);
-        break;
-      case 'textoApoioJson':
-        setValue('textoApoioJson', value);
-        break;
-    }
+    setValue(key, value as never);
   };
 
   useEffect(() => {
     async function init() {
       try {
         setLoading(true);
-        const [provaData, disciplinasData, textosData, enunciadosData] = await Promise.all([
-          obterProva(provaId),
-          listarDisciplinas(),
-          listarTextosApoio(),
-          listarEnunciados(),
-        ]);
+        const [provaData, disciplinasData, textosData, enunciadosData] = await Promise.all([obterProva(provaId), listarDisciplinas(), listarTextosApoio(), listarEnunciados()]);
         setProva(provaData);
         setDisciplinas(disciplinasData);
         setTextosApoio(textosData);
@@ -202,8 +151,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       setSubassuntos([]);
       setValue('assuntoId', '');
       setValue('subassunto', '');
-      if (!disciplinaId) return;
-      setAssuntos(await listarAssuntosPorDisciplina(disciplinaId));
+      if (disciplinaId) setAssuntos(await listarAssuntosPorDisciplina(disciplinaId));
     }
     load().catch(() => setAssuntos([]));
   }, [disciplinaId, setValue]);
@@ -212,8 +160,7 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     async function load() {
       setSubassuntos([]);
       setValue('subassunto', '');
-      if (!assuntoId) return;
-      setSubassuntos(await listarSubassuntosPorAssunto(assuntoId));
+      if (assuntoId) setSubassuntos(await listarSubassuntosPorAssunto(assuntoId));
     }
     load().catch(() => setSubassuntos([]));
   }, [assuntoId, setValue]);
@@ -221,7 +168,6 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   async function criarDisciplina() {
     const nome = window.prompt('Nome da nova disciplina:')?.trim();
     if (!nome) return;
-
     try {
       const novo = await criarItemCatalogo('disciplinas', nome);
       setDisciplinas((atual) => [novo, ...atual.filter((item) => item.id !== novo.id)]);
@@ -233,19 +179,11 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   }
 
   async function criarAssunto() {
-    if (!disciplinaId) {
-      setErro('Selecione uma disciplina antes de adicionar um assunto.');
-      return;
-    }
-
+    if (!disciplinaId) return setErro('Selecione uma disciplina antes de adicionar um assunto.');
     const nome = window.prompt('Nome do novo assunto:')?.trim();
     if (!nome) return;
-
     try {
-      const novo = await criarAssuntoCatalogo({
-        disciplinaId: Number(disciplinaId),
-        nome,
-      });
+      const novo = await criarAssuntoCatalogo({ disciplinaId: Number(disciplinaId), nome });
       setAssuntos((atual) => [novo, ...atual.filter((item) => item.id !== novo.id)]);
       setValue('assuntoId', String(novo.id));
       setSucesso(`Assunto "${novo.nome}" adicionado.`);
@@ -255,19 +193,11 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
   }
 
   async function criarSubassunto() {
-    if (!assuntoId) {
-      setErro('Selecione um assunto antes de adicionar um subassunto.');
-      return;
-    }
-
+    if (!assuntoId) return setErro('Selecione um assunto antes de adicionar um subassunto.');
     const nome = window.prompt('Nome do novo subassunto:')?.trim();
     if (!nome) return;
-
     try {
-      const novo = await criarSubassuntoCatalogo({
-        assuntoId: Number(assuntoId),
-        nome,
-      });
+      const novo = await criarSubassuntoCatalogo({ assuntoId: Number(assuntoId), nome });
       setSubassuntos((atual) => [novo, ...atual.filter((item) => item.nome !== novo.nome)]);
       setValue('subassunto', novo.nome);
       setSucesso(`Subassunto "${novo.nome}" adicionado.`);
@@ -280,25 +210,25 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
     setErro('');
     setSucesso('');
 
-    if (data.textoApoioId && (data.textoApoioConteudo.trim() || data.textoApoioJson.trim())) {
-      setErro('Use texto de apoio existente ou cole um novo texto, não os dois ao mesmo tempo.');
-      return;
-    }
+    if (data.textoApoioId && (data.textoApoioConteudo.trim() || data.textoApoioJson.trim())) return setErro('Use texto de apoio existente ou cole um novo texto, não os dois ao mesmo tempo.');
 
     const erroTextoApoio = validarTextoApoioQuestao({ ...data, imagemArquivo });
-    if (erroTextoApoio) {
-      setErro(erroTextoApoio);
-      return;
-    }
+    if (erroTextoApoio) return setErro(erroTextoApoio);
+
+    const erroImagem = validarImagemQuestao({ arquivo: questionImageFile, textoAlternativo: data.questaoImagemConteudo });
+    if (erroImagem) return setErro(erroImagem);
 
     try {
       const textoApoio = await prepararTextoApoioQuestao({ ...data, imagemArquivo });
+      const imagemQuestao = await prepararImagemQuestao({ arquivo: questionImageFile, textoAlternativo: data.questaoImagemConteudo, titulo: 'Imagem do item' });
+
       await criarQuestaoDaProva(provaId, {
         enunciado: data.enunciadoId ? null : data.enunciado.trim(),
         enunciadoId: data.enunciadoId ? Number(data.enunciadoId) : null,
         questao: data.questao.trim(),
         alternativas: montarAlternativas(prova, data),
         explicacao: data.explicacao.trim() || null,
+        ...imagemQuestao,
         ...textoApoio,
         disciplinaId: Number(data.disciplinaId),
         assuntoId: Number(data.assuntoId),
@@ -307,27 +237,14 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
       });
       setSucesso('Questão cadastrada com sucesso nesta prova.');
       setImagemArquivo(null);
-      reset({
-        ...defaults,
-        textoApoioId: data.textoApoioId,
-        enunciadoId: data.enunciadoId,
-        enunciado: data.enunciado,
-        disciplinaId: data.disciplinaId,
-        assuntoId: data.assuntoId,
-        subassunto: data.subassunto,
-      });
+      setQuestionImageFile(null);
+      reset({ ...defaults, textoApoioId: data.textoApoioId, enunciadoId: data.enunciadoId, enunciado: data.enunciado, disciplinaId: data.disciplinaId, assuntoId: data.assuntoId, subassunto: data.subassunto });
     } catch (error: unknown) {
       setErro(getApiErrorMessage(error, 'Não foi possível cadastrar a questão.'));
     }
   }
 
-  if (loading) {
-    return (
-      <Box sx={{ minHeight: '70vh', display: 'grid', placeItems: 'center' }}>
-        <CircularProgress />
-      </Box>
-    );
-  }
+  if (loading) return <Box sx={{ minHeight: '70vh', display: 'grid', placeItems: 'center' }}><CircularProgress /></Box>;
 
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#f6f8fb', py: { xs: 2, md: 5 } }}>
@@ -336,14 +253,8 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
           <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 4 } }}>
             <Stack spacing={2.5}>
               <Box>
-                <Typography sx={{ fontSize: { xs: 30, sm: 34, md: 40 }, fontWeight: 800, lineHeight: 1.1, color: '#0f172a' }}>
-                  Cadastro de Questão
-                </Typography>
-                {prova && (
-                  <Typography color="text.secondary" mt={1}>
-                    {prova.banca} • {prova.instituicao} • {prova.cargo} • {prova.ano}
-                  </Typography>
-                )}
+                <Typography sx={{ fontSize: { xs: 30, sm: 34, md: 40 }, fontWeight: 800, lineHeight: 1.1, color: '#0f172a' }}>Cadastro de Questão</Typography>
+                {prova && <Typography color="text.secondary" mt={1}>{prova.banca} • {prova.instituicao} • {prova.cargo} • {prova.ano}</Typography>}
               </Box>
 
               {erro && <Alert severity="error" sx={{ borderRadius: 2 }}>{erro}</Alert>}
@@ -355,192 +266,57 @@ export default function ProvaQuestaoForm({ provaId }: { provaId: number }) {
                     <Stack spacing={2}>
                       <Box>
                         <Typography fontWeight={800} color="#1e40af">Texto de apoio</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Reaproveite um texto existente ou cole um novo texto para várias questões.
-                        </Typography>
+                        <Typography variant="body2" color="text.secondary">Reaproveite um texto existente ou cole um novo texto para várias questões.</Typography>
                       </Box>
 
-                      <TextField
-                        select
-                        label="Reaproveitar texto existente"
-                        fullWidth
-                        {...register('textoApoioId')}
-                        onChange={(e) => {
-                          setValue('textoApoioId', e.target.value);
-                          if (e.target.value) {
-                            setValue('textoApoioTitulo', '');
-                            setValue('textoApoioTipo', 'TEXTO');
-                            setValue('textoApoioConteudo', '');
-                            setValue('textoApoioJson', '');
-                            setImagemArquivo(null);
-                          }
-                        }}
-                      >
+                      <TextField select label="Reaproveitar texto existente" fullWidth {...register('textoApoioId')} onChange={(e) => {
+                        setValue('textoApoioId', e.target.value);
+                        if (e.target.value) {
+                          setValue('textoApoioTitulo', '');
+                          setValue('textoApoioTipo', 'TEXTO');
+                          setValue('textoApoioConteudo', '');
+                          setValue('textoApoioJson', '');
+                          setImagemArquivo(null);
+                        }
+                      }}>
                         <MenuItem value="">Nenhum</MenuItem>
-                        {textosApoio.map((t) => (
-                          <MenuItem key={t.id} value={String(t.id)}>{t.titulo || `Texto de apoio #${t.id}`} · {t.tipo || 'TEXTO'}</MenuItem>
-                        ))}
+                        {textosApoio.map((t) => <MenuItem key={t.id} value={String(t.id)}>{t.titulo || `Texto de apoio #${t.id}`} · {t.tipo || 'TEXTO'}</MenuItem>)}
                       </TextField>
 
-                      {textoApoioSelecionado && (
-                        <TextoApoioViewer
-                          titulo={textoApoioSelecionado.titulo}
-                          tipo={textoApoioSelecionado.tipo}
-                          conteudo={textoApoioSelecionado.conteudo}
-                          conteudoJson={textoApoioSelecionado.conteudoJson}
-                          compact
-                        />
-                      )}
+                      {textoApoioSelecionado && <TextoApoioViewer titulo={textoApoioSelecionado.titulo} tipo={textoApoioSelecionado.tipo} conteudo={textoApoioSelecionado.conteudo} conteudoJson={textoApoioSelecionado.conteudoJson} compact />}
 
-                      {!textoApoioId && (
-                        <TextoApoioEditor
-                          value={{
-                            textoApoioTitulo,
-                            textoApoioTipo,
-                            textoApoioConteudo,
-                            textoApoioJson,
-                          }}
-                          onChange={setTextoApoioField}
-                          imagemArquivo={imagemArquivo}
-                          onImagemArquivoChange={setImagemArquivo}
-                        />
-                      )}
+                      {!textoApoioId && <TextoApoioEditor value={{ textoApoioTitulo, textoApoioTipo, textoApoioConteudo, textoApoioJson }} onChange={setTextoApoioField} imagemArquivo={imagemArquivo} onImagemArquivoChange={setImagemArquivo} />}
                     </Stack>
                   </Paper>
 
-                  <EnunciadoSelector
-                    enunciados={enunciados}
-                    enunciadoId={enunciadoId}
-                    conteudo={enunciado}
-                    onChange={(novoEnunciadoId, conteudo) => {
-                      setValue('enunciadoId', novoEnunciadoId);
-                      setValue('enunciado', conteudo);
-                    }}
-                    error={!!errors.enunciado}
-                    helperText={errors.enunciado?.message}
-                  />
+                  <EnunciadoSelector enunciados={enunciados} enunciadoId={enunciadoId} conteudo={enunciado} onChange={(novoEnunciadoId, conteudo) => { setValue('enunciadoId', novoEnunciadoId); setValue('enunciado', conteudo); }} error={!!errors.enunciado} helperText={errors.enunciado?.message} />
 
-                  <TextField
-                    label="Questão"
-                    multiline
-                    minRows={4}
-                    fullWidth
-                    error={!!errors.questao}
-                    helperText={errors.questao?.message}
-                    {...register('questao', { required: 'Informe o texto da questão.' })}
-                  />
+                  <TextField label="Questão" multiline minRows={4} fullWidth error={!!errors.questao} helperText={errors.questao?.message} {...register('questao', { required: 'Informe o texto da questão.' })} />
 
-                  <TextField
-                    label="Explicação da questão"
-                    helperText="Será exibida no app somente depois que o usuário tentar resolver a questão."
-                    multiline
-                    minRows={5}
-                    fullWidth
-                    {...register('explicacao')}
-                  />
+                  <QuestionImageInput file={questionImageFile} altText={questaoImagemConteudo} onFileChange={setQuestionImageFile} onAltTextChange={(value) => setValue('questaoImagemConteudo', value)} />
 
-                  {certoErrado(prova?.modalidade) ? (
-                    <Alert severity="info" sx={{ borderRadius: 2 }}>
-                      As alternativas serão preenchidas automaticamente como CERTO e ERRADO.
-                    </Alert>
-                  ) : (
-                    <Stack spacing={1.5}>
-                      {gabaritoOptions.map((letra) => (
-                        <TextField key={letra} label={`Alternativa ${letra}`} fullWidth {...register(`alternativa_${letra}` as keyof FormData)} />
-                      ))}
-                    </Stack>
-                  )}
+                  <TextField label="Explicação da questão" helperText="Será exibida no app somente depois que o usuário tentar resolver a questão." multiline minRows={5} fullWidth {...register('explicacao')} />
+
+                  {certoErrado(prova?.modalidade) ? <Alert severity="info" sx={{ borderRadius: 2 }}>As alternativas serão preenchidas automaticamente como CERTO e ERRADO.</Alert> : <Stack spacing={1.5}>{gabaritoOptions.map((letra) => <TextField key={letra} label={`Alternativa ${letra}`} fullWidth {...register(`alternativa_${letra}` as keyof FormData)} />)}</Stack>}
 
                   <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2 }}>
-                    <TextField
-                      select
-                      label="Disciplina"
-                      fullWidth
-                      error={!!errors.disciplinaId}
-                      helperText={errors.disciplinaId?.message}
-                      {...register('disciplinaId', { required: 'Selecione a disciplina.' })}
-                      onChange={(e) => {
-                        if (e.target.value === ADD_NEW) {
-                          criarDisciplina();
-                          return;
-                        }
-                        setValue('disciplinaId', e.target.value);
-                      }}
-                    >
-                      <MenuItem value={ADD_NEW}>+ Adicionar nova disciplina</MenuItem>
-                      <MenuItem value="">Selecione</MenuItem>
-                      {disciplinas.map((d) => (
-                        <MenuItem key={d.id} value={String(d.id)}>{d.nome}</MenuItem>
-                      ))}
+                    <TextField select label="Disciplina" fullWidth error={!!errors.disciplinaId} helperText={errors.disciplinaId?.message} {...register('disciplinaId', { required: 'Selecione a disciplina.' })} onChange={(e) => { if (e.target.value === ADD_NEW) return criarDisciplina(); setValue('disciplinaId', e.target.value); }}>
+                      <MenuItem value={ADD_NEW}>+ Adicionar nova disciplina</MenuItem><MenuItem value="">Selecione</MenuItem>{disciplinas.map((d) => <MenuItem key={d.id} value={String(d.id)}>{d.nome}</MenuItem>)}
                     </TextField>
-
-                    <TextField
-                      select
-                      label="Assunto"
-                      fullWidth
-                      disabled={!disciplinaId}
-                      error={!!errors.assuntoId}
-                      helperText={errors.assuntoId?.message}
-                      {...register('assuntoId', { required: 'Selecione o assunto.' })}
-                      onChange={(e) => {
-                        if (e.target.value === ADD_NEW) {
-                          criarAssunto();
-                          return;
-                        }
-                        setValue('assuntoId', e.target.value);
-                      }}
-                    >
-                      <MenuItem value={ADD_NEW}>+ Adicionar novo assunto</MenuItem>
-                      <MenuItem value="">Selecione</MenuItem>
-                      {assuntos.map((a) => (
-                        <MenuItem key={a.id} value={String(a.id)}>{a.nome}</MenuItem>
-                      ))}
+                    <TextField select label="Assunto" fullWidth disabled={!disciplinaId} error={!!errors.assuntoId} helperText={errors.assuntoId?.message} {...register('assuntoId', { required: 'Selecione o assunto.' })} onChange={(e) => { if (e.target.value === ADD_NEW) return criarAssunto(); setValue('assuntoId', e.target.value); }}>
+                      <MenuItem value={ADD_NEW}>+ Adicionar novo assunto</MenuItem><MenuItem value="">Selecione</MenuItem>{assuntos.map((a) => <MenuItem key={a.id} value={String(a.id)}>{a.nome}</MenuItem>)}
                     </TextField>
-
-                    <TextField
-                      select
-                      label="Subassunto"
-                      fullWidth
-                      disabled={!assuntoId}
-                      helperText="Opcional."
-                      {...register('subassunto')}
-                      onChange={(e) => {
-                        if (e.target.value === ADD_NEW) {
-                          criarSubassunto();
-                          return;
-                        }
-                        setValue('subassunto', e.target.value);
-                      }}
-                    >
-                      <MenuItem value={ADD_NEW}>+ Adicionar novo subassunto</MenuItem>
-                      <MenuItem value="">Selecione</MenuItem>
-                      {subassuntos.map((s) => (
-                        <MenuItem key={s.id} value={s.nome}>{s.nome}</MenuItem>
-                      ))}
+                    <TextField select label="Subassunto" fullWidth disabled={!assuntoId} helperText="Opcional." {...register('subassunto')} onChange={(e) => { if (e.target.value === ADD_NEW) return criarSubassunto(); setValue('subassunto', e.target.value); }}>
+                      <MenuItem value={ADD_NEW}>+ Adicionar novo subassunto</MenuItem><MenuItem value="">Selecione</MenuItem>{subassuntos.map((s) => <MenuItem key={s.id} value={s.nome}>{s.nome}</MenuItem>)}
                     </TextField>
-
-                    <TextField
-                      select
-                      label="Gabarito"
-                      fullWidth
-                      error={!!errors.gabarito}
-                      helperText={errors.gabarito?.message}
-                      {...register('gabarito', { required: 'Selecione o gabarito.' })}
-                    >
-                      <MenuItem value="">Selecione</MenuItem>
-                      {gabaritoOptions.map((g) => (
-                        <MenuItem key={g} value={g}>{labelGabarito(g)}</MenuItem>
-                      ))}
+                    <TextField select label="Gabarito" fullWidth error={!!errors.gabarito} helperText={errors.gabarito?.message} {...register('gabarito', { required: 'Selecione o gabarito.' })}>
+                      <MenuItem value="">Selecione</MenuItem>{gabaritoOptions.map((g) => <MenuItem key={g} value={g}>{labelGabarito(g)}</MenuItem>)}
                     </TextField>
                   </Box>
 
                   <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                    <Button type="submit" variant="contained" disabled={isSubmitting} fullWidth sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700 }}>
-                      {isSubmitting ? 'Cadastrando...' : 'Cadastrar questão'}
-                    </Button>
-                    <Button variant="outlined" fullWidth onClick={() => router.push(`/provas/${provaId}`)} sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700 }}>
-                      Voltar para prova
-                    </Button>
+                    <Button type="submit" variant="contained" disabled={isSubmitting} fullWidth sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700 }}>{isSubmitting ? 'Cadastrando...' : 'Cadastrar questão'}</Button>
+                    <Button variant="outlined" fullWidth onClick={() => router.push(`/provas/${provaId}`)} sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700 }}>Voltar para prova</Button>
                   </Stack>
                 </Stack>
               </Box>
