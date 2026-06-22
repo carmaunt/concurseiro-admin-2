@@ -60,6 +60,8 @@ export type QuestaoListItem = {
   questao: string;
   alternativas: string | null;
   explicacao?: string | null;
+  questaoImagemConteudo?: string | null;
+  questaoImagemJson?: string | null;
   textoApoioId?: number | null;
   textoApoioTitulo?: string | null;
   textoApoioConteudo?: string | null;
