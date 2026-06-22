@@ -9,6 +9,11 @@ export type UploadImagemTextoApoio = {
   textoAlternativo: string;
 };
 
+export type ImagemQuestaoPayload = {
+  questaoImagemConteudo: string | null;
+  questaoImagemJson: string | null;
+};
+
 export async function enviarImagemTextoApoio({
   arquivo,
   titulo,
@@ -21,6 +26,25 @@ export async function enviarImagemTextoApoio({
 
   const response = await api.post('/api/v1/admin/textos-apoio/imagens', formData);
   return normalizeSupportText(response.data);
+}
+
+export async function enviarImagemQuestao({
+  arquivo,
+  titulo,
+  textoAlternativo,
+}: UploadImagemTextoApoio): Promise<ImagemQuestaoPayload> {
+  const formData = new FormData();
+  formData.append('arquivo', arquivo);
+  if (titulo) formData.append('titulo', titulo);
+  formData.append('textoAlternativo', textoAlternativo);
+
+  const response = await api.post('/api/v1/admin/questoes/imagens', formData);
+  const imagem = normalizeSupportText(response.data);
+
+  return {
+    questaoImagemConteudo: imagem.conteudo || textoAlternativo,
+    questaoImagemJson: imagem.conteudoJson || null,
+  };
 }
 
 export type TextoApoioQuestaoInput = {
@@ -39,6 +63,37 @@ export type TextoApoioQuestaoPayload = {
   textoApoioConteudo: string | null;
   textoApoioJson: string | null;
 };
+
+export type ImagemQuestaoInput = {
+  arquivo: File | null;
+  textoAlternativo: string;
+  titulo?: string | null;
+};
+
+export function validarImagemQuestao(input: ImagemQuestaoInput) {
+  if (!input.arquivo) return null;
+
+  const alt = input.textoAlternativo.trim();
+  if (!alt) return 'Informe o texto alternativo da imagem da questão.';
+  if (alt.length > 500) return 'O texto alternativo da imagem da questão deve ter no máximo 500 caracteres.';
+
+  return null;
+}
+
+export async function prepararImagemQuestao(input: ImagemQuestaoInput): Promise<ImagemQuestaoPayload> {
+  if (!input.arquivo) {
+    return {
+      questaoImagemConteudo: null,
+      questaoImagemJson: null,
+    };
+  }
+
+  return enviarImagemQuestao({
+    arquivo: input.arquivo,
+    titulo: input.titulo || null,
+    textoAlternativo: input.textoAlternativo.trim(),
+  });
+}
 
 export function validarTextoApoioQuestao(input: TextoApoioQuestaoInput) {
   if (input.textoApoioId) return null;
