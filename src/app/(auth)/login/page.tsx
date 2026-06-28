@@ -77,6 +77,8 @@ export default function LoginPage() {
     }
   };
 
+  const submitLogin = handleSubmit(onSubmit);
+
   return (
     <Box
       sx={{
@@ -212,7 +214,18 @@ export default function LoginPage() {
 
                 <Box
                   component="form"
-                  onSubmit={handleSubmit(onSubmit)}
+                  method="post"
+                  noValidate
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      void submitLogin();
+                    }
+                  }}
                   display="flex"
                   flexDirection="column"
                   gap={2.5}
@@ -248,10 +261,11 @@ export default function LoginPage() {
                   />
 
                   <Button
-                    type="submit"
+                    type="button"
                     variant="contained"
                     size="large"
                     disabled={isSubmitting}
+                    onClick={() => void submitLogin()}
                     sx={{
                       mt: 1,
                       height: 52,
