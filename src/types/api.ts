@@ -107,3 +107,52 @@ export type ProvaDetalhe = ProvaListItem & {
 export type QuestoesPageData = PageResponse<QuestaoListItem>;
 export type ProvasPageData = PageResponse<ProvaListItem>;
 export type UsuariosPageData = OptionalPageResponse<Usuario>;
+
+export type ConteudoTipo = 'NOTICIA' | 'BLOG' | 'CONCURSO_ABERTO' | 'EDITAL_PREVISTO';
+export type ConteudoStatus = 'RASCUNHO' | 'PUBLICADO';
+export type TaxonomiaStatus = 'ATIVA' | 'ARQUIVADA';
+
+export type TaxonomiaResumo = {
+  id: number;
+  nome: string;
+  slug: string;
+};
+
+export type CategoriaEditorial = TaxonomiaResumo & {
+  descricao?: string | null;
+  status: TaxonomiaStatus;
+  quantidadeConteudos: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TagEditorial = TaxonomiaResumo & {
+  status: TaxonomiaStatus;
+  quantidadeConteudos: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ConteudoPortal = {
+  id: number;
+  titulo: string;
+  slug: string;
+  resumo: string;
+  conteudo: string;
+  imagemCapa?: string | null;
+  categoria?: string | null;
+  category?: TaxonomiaResumo | null;
+  tags: TaxonomiaResumo[];
+  status: ConteudoStatus;
+  tipo: ConteudoTipo;
+  destaque: boolean;
+  publicadoEm?: string | null;
+  seoTitulo?: string | null;
+  seoDescricao?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ConteudosPageData = PageResponse<ConteudoPortal>;
+export type CategoriasPageData = PageResponse<CategoriaEditorial>;
+export type TagsPageData = PageResponse<TagEditorial>;

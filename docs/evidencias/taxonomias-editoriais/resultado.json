@@ -1,0 +1,42 @@
+[
+  {
+    "name": "login administrativo",
+    "status": "ok",
+    "url": "http://localhost:3001/questoes"
+  },
+  {
+    "name": "categorias migradas",
+    "status": "ok",
+    "url": "http://localhost:3001/conteudos/categorias"
+  },
+  {
+    "name": "criação com slug automático",
+    "status": "ok",
+    "url": "http://localhost:3001/conteudos/categorias"
+  },
+  {
+    "name": "erro de slug duplicado",
+    "status": "ok",
+    "url": "http://localhost:3001/conteudos/categorias"
+  },
+  {
+    "name": "arquivamento e reativação",
+    "status": "ok",
+    "url": "http://localhost:3001/conteudos/categorias"
+  },
+  {
+    "name": "criação de tag",
+    "status": "ok",
+    "url": "http://localhost:3001/conteudos/tags"
+  },
+  {
+    "name": "seletores no conteúdo",
+    "status": "ok",
+    "url": "http://localhost:3001/conteudos"
+  },
+  {
+    "name": "layout mobile",
+    "status": "ok",
+    "url": "http://localhost:3001/conteudos/categorias"
+  }
+]

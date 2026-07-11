@@ -60,6 +60,18 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <ListItemText primary="Importar catálogo" />
         </ListItemButton>
 
+        <ListItemButton selected={pathname === '/conteudos'} onClick={() => router.push('/conteudos')} sx={{ borderRadius: 2, mb: 0.5 }}>
+          <ListItemText primary="Conteúdos" />
+        </ListItemButton>
+
+        <ListItemButton selected={pathname === '/conteudos/categorias'} onClick={() => router.push('/conteudos/categorias')} sx={{ borderRadius: 2, mb: 0.5, pl: 4 }}>
+          <ListItemText primary="Categorias" primaryTypographyProps={{ variant: 'body2' }} />
+        </ListItemButton>
+
+        <ListItemButton selected={pathname === '/conteudos/tags'} onClick={() => router.push('/conteudos/tags')} sx={{ borderRadius: 2, mb: 0.5, pl: 4 }}>
+          <ListItemText primary="Tags" primaryTypographyProps={{ variant: 'body2' }} />
+        </ListItemButton>
+
         <ListItemButton
           selected={pathname === '/usuarios'}
           onClick={() => {

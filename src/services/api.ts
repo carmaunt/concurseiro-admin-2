@@ -38,8 +38,8 @@ export function getApiErrorMessage(error: unknown, fallback = 'Não foi possíve
 
   const data = error.response?.data;
 
-  if (typeof data?.title === 'string') return data.title;
   if (typeof data?.detail === 'string') return data.detail;
+  if (typeof data?.title === 'string') return data.title;
   if (typeof data?.message === 'string') return data.message;
   if (typeof data?.error === 'string') return data.error;
   if (error.message) return error.message;
