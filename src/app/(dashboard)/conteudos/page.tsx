@@ -39,11 +39,13 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 import UnpublishedOutlinedIcon from '@mui/icons-material/UnpublishedOutlined';
+import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import { getApiErrorMessage } from '@/services/api';
 import type { ConteudoPortal, ConteudoStatus, ConteudoTipo } from '@/types/api';
 import { useAlterarStatusConteudo, useConteudos, useExcluirConteudo, useSalvarConteudo } from '@/hooks/useConteudos';
 import { useCategoriasAtivas, useTagsAtivas } from '@/hooks/useTaxonomias';
-import type { ConteudoPayload, ConteudosFilters } from '@/services/conteudosService';
+import { enviarImagemCapa, type ConteudoPayload, type ConteudosFilters } from '@/services/conteudosService';
 
 const tipos: Array<{ value: ConteudoTipo; label: string }> = [
   { value: 'NOTICIA', label: 'Notícia' },
@@ -101,6 +103,8 @@ export default function ConteudosPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ConteudoPortal | null>(null);
   const [form, setForm] = useState<ConteudoPayload>(emptyForm);
+  const [imagemArquivo, setImagemArquivo] = useState<File | null>(null);
+  const [enviandoImagem, setEnviandoImagem] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   const queryFilters = useMemo(() => filters, [filters]);
@@ -113,6 +117,7 @@ export default function ConteudosPage() {
       setDialogOpen(false);
       setEditing(null);
       setForm(emptyForm);
+      setImagemArquivo(null);
       setFeedback({ type: 'success', message: 'Conteúdo salvo com sucesso.' });
     },
     onError: (error) => setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Não foi possível salvar o conteúdo.') }),
@@ -146,18 +151,28 @@ export default function ConteudosPage() {
   function abrirNovo() {
     setEditing(null);
     setForm(emptyForm);
+    setImagemArquivo(null);
     setDialogOpen(true);
   }
 
   function abrirEdicao(conteudo: ConteudoPortal) {
     setEditing(conteudo);
     setForm(toPayload(conteudo));
+    setImagemArquivo(null);
     setDialogOpen(true);
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    salvar.mutate({ id: editing?.id, payload: form });
+    try {
+      setEnviandoImagem(Boolean(imagemArquivo));
+      const imagemCapa = imagemArquivo ? (await enviarImagemCapa(imagemArquivo)).url : form.imagemCapa;
+      salvar.mutate({ id: editing?.id, payload: { ...form, imagemCapa } });
+    } catch (error) {
+      setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Não foi possível enviar a imagem de capa.') });
+    } finally {
+      setEnviandoImagem(false);
+    }
   }
 
   if (isLoading) {
@@ -377,7 +392,30 @@ export default function ConteudosPage() {
                 renderInput={(params) => <TextField {...params} label="Tags" helperText="Selecione tags já cadastradas" />}
               />
 
-              <TextField label="Imagem de capa" helperText="URL da imagem. Upload fica para a próxima evolução." value={form.imagemCapa ?? ''} onChange={(event) => setForm((current) => ({ ...current, imagemCapa: event.target.value }))} />
+              <Stack spacing={1.25}>
+                <Typography fontWeight={700}>Imagem de capa</Typography>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }}>
+                  <Button component="label" variant="outlined" startIcon={<UploadFileOutlinedIcon />} disabled={enviandoImagem || salvar.isPending} sx={{ textTransform: 'none', alignSelf: { xs: 'stretch', sm: 'auto' } }}>
+                    {imagemArquivo ? 'Trocar imagem' : 'Selecionar imagem'}
+                    <input hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setImagemArquivo(event.target.files?.[0] ?? null)} />
+                  </Button>
+                  {imagemArquivo ? (
+                    <Typography variant="body2" color="text.secondary">
+                      {imagemArquivo.name} · {(imagemArquivo.size / 1024 / 1024).toFixed(2)} MB
+                    </Typography>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">PNG, JPEG ou WebP de até 5 MB.</Typography>
+                  )}
+                </Stack>
+                {form.imagemCapa && !imagemArquivo ? (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <ImageOutlinedIcon color="action" fontSize="small" />
+                    <Typography component="a" href={form.imagemCapa} target="_blank" rel="noreferrer" variant="body2" color="primary" sx={{ wordBreak: 'break-all' }}>
+                      Visualizar capa atual
+                    </Typography>
+                  </Stack>
+                ) : null}
+              </Stack>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField label="Título SEO" fullWidth value={form.seoTitulo ?? ''} onChange={(event) => setForm((current) => ({ ...current, seoTitulo: event.target.value }))} />
                 <TextField label="Descrição SEO" fullWidth value={form.seoDescricao ?? ''} onChange={(event) => setForm((current) => ({ ...current, seoDescricao: event.target.value }))} />
@@ -391,8 +429,8 @@ export default function ConteudosPage() {
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button onClick={() => setDialogOpen(false)} sx={{ textTransform: 'none' }}>Cancelar</Button>
-            <Button type="submit" variant="contained" disabled={salvar.isPending} sx={{ textTransform: 'none', fontWeight: 800, bgcolor: '#1e344d' }}>
-              {salvar.isPending ? 'Salvando...' : 'Salvar'}
+            <Button type="submit" variant="contained" disabled={salvar.isPending || enviandoImagem} sx={{ textTransform: 'none', fontWeight: 800, bgcolor: '#1e344d' }}>
+              {enviandoImagem ? 'Enviando imagem...' : salvar.isPending ? 'Salvando...' : 'Salvar'}
             </Button>
           </DialogActions>
         </Box>

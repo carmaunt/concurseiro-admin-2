@@ -22,6 +22,13 @@ export type ConteudosFilters = {
   q?: string;
 };
 
+export type ImagemCapaUpload = {
+  url: string;
+  contentType: string;
+  largura?: number | null;
+  altura?: number | null;
+};
+
 export async function listarConteudos(page: number, size: number, filters: ConteudosFilters = {}) {
   const response = await api.get<ApiResponse<ConteudosPageData>>('/api/v1/admin/conteudos', {
     params: {
@@ -55,4 +62,12 @@ export async function alterarStatusConteudo(id: number, status: ConteudoStatus) 
 
 export async function excluirConteudo(id: number) {
   await api.delete(`/api/v1/admin/conteudos/${id}`);
+}
+
+export async function enviarImagemCapa(arquivo: File) {
+  const formData = new FormData();
+  formData.append('arquivo', arquivo);
+
+  const response = await api.post<ApiResponse<ImagemCapaUpload>>('/api/v1/admin/conteudos/imagens', formData);
+  return response.data.data;
 }
