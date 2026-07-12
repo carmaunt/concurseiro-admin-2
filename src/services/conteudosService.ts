@@ -72,6 +72,11 @@ export async function excluirConteudo(id: number) {
   await api.delete(`/api/v1/admin/conteudos/${id}`);
 }
 
+export async function publicarConteudoNoInstagram(id: number) {
+  const response = await api.post<ApiResponse<ConteudoPortal>>(`/api/v1/admin/conteudos/${id}/instagram/publicar`);
+  return response.data.data;
+}
+
 export async function enviarImagemCapa(arquivo: File) {
   const formData = new FormData();
   formData.append('arquivo', arquivo);

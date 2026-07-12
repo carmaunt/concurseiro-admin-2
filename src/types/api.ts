@@ -145,6 +145,10 @@ export type ConteudoPortal = {
   imagemSecundariaAlt?: string | null;
   instagramLegenda?: string | null;
   instagramHashtags?: string | null;
+  instagramStatus?: 'NAO_PUBLICADO' | 'EM_PROCESSAMENTO' | 'PUBLICADO' | 'FALHOU' | null;
+  instagramMediaId?: string | null;
+  instagramPublicadoEm?: string | null;
+  instagramUltimaFalha?: string | null;
   autorNome?: string | null;
   revisadoPor?: string | null;
   fontesOficiais?: Array<{ nome: string; url: string }>;

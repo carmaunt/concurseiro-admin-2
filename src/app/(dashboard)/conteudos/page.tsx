@@ -44,7 +44,7 @@ import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import { getApiErrorMessage } from '@/services/api';
 import type { ConteudoPortal, ConteudoStatus, ConteudoTipo } from '@/types/api';
-import { useAlterarStatusConteudo, useConteudos, useExcluirConteudo, useSalvarConteudo } from '@/hooks/useConteudos';
+import { useAlterarStatusConteudo, useConteudos, useExcluirConteudo, usePublicarConteudoNoInstagram, useSalvarConteudo } from '@/hooks/useConteudos';
 import { useCategoriasAtivas, useTagsAtivas } from '@/hooks/useTaxonomias';
 import { enviarImagemCapa, type ConteudoPayload, type ConteudosFilters } from '@/services/conteudosService';
 
@@ -176,6 +176,14 @@ export default function ConteudosPage() {
   const excluir = useExcluirConteudo({
     onSuccess: () => setFeedback({ type: 'success', message: 'Conteúdo excluído.' }),
     onError: (error) => setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Não foi possível excluir o conteúdo.') }),
+  });
+  const publicarInstagram = usePublicarConteudoNoInstagram({
+    onSuccess: (conteudo) => {
+      setEditing(conteudo);
+      setForm(toPayload(conteudo));
+      setFeedback({ type: 'success', message: 'Conteúdo publicado no Instagram com sucesso.' });
+    },
+    onError: (error) => setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Não foi possível publicar no Instagram.') }),
   });
 
   const conteudos = data?.content ?? [];
@@ -488,7 +496,7 @@ export default function ConteudosPage() {
               </Stack> : null}
               <Stack spacing={1.25} sx={{ p: 2, border: '1px solid #e8edf3', borderRadius: 2, bgcolor: '#fafbfc' }}>
                 <Typography fontWeight={700}>Publicação no Instagram</Typography>
-                <Typography variant="body2" color="text.secondary">A capa já enviada pode ser reutilizada como imagem. Salve estes campos junto ao conteúdo e copie a legenda pronta quando for publicar.</Typography>
+                <Typography variant="body2" color="text.secondary">A capa já enviada será usada como imagem da publicação. Salve o conteúdo e publique diretamente por este painel.</Typography>
                 <TextField
                   label="Legenda do Instagram"
                   helperText="Opcional. Se ficar vazia, o resumo será usado na legenda pronta."
@@ -507,11 +515,22 @@ export default function ConteudosPage() {
                 />
                 <TextField label="Prévia da legenda" multiline minRows={5} value={legendaInstagram} InputProps={{ readOnly: true }} />
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+                  <Button
+                    type="button"
+                    variant="contained"
+                    startIcon={<PublishOutlinedIcon />}
+                    onClick={() => editing && publicarInstagram.mutate(editing.id)}
+                    disabled={!editing || editing.status !== 'PUBLICADO' || !editing.imagemCapa || publicarInstagram.isPending || editing.instagramStatus === 'PUBLICADO'}
+                    sx={{ textTransform: 'none', alignSelf: { xs: 'stretch', sm: 'flex-start' } }}
+                  >
+                    {publicarInstagram.isPending ? 'Publicando...' : editing?.instagramStatus === 'PUBLICADO' ? 'Publicado no Instagram' : 'Publicar no Instagram'}
+                  </Button>
                   <Button type="button" variant="outlined" startIcon={<ContentCopyOutlinedIcon />} onClick={copiarLegendaInstagram} disabled={!legendaInstagram} sx={{ textTransform: 'none', alignSelf: { xs: 'stretch', sm: 'flex-start' } }}>
                     Copiar legenda pronta
                   </Button>
                   {form.imagemCapa ? <Button type="button" component="a" href={form.imagemCapa} target="_blank" rel="noreferrer" variant="text" sx={{ textTransform: 'none' }}>Abrir imagem de capa</Button> : null}
                 </Stack>
+                {editing?.instagramUltimaFalha ? <Alert severity="error">{editing.instagramUltimaFalha}</Alert> : null}
               </Stack>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField label="Autor" fullWidth value={form.autorNome ?? ''} onChange={(event) => setForm((current) => ({ ...current, autorNome: event.target.value }))} />

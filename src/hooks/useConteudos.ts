@@ -5,6 +5,7 @@ import {
   criarConteudo,
   excluirConteudo,
   listarConteudos,
+  publicarConteudoNoInstagram,
   type ConteudoPayload,
   type ConteudosFilters,
 } from '@/services/conteudosService';
@@ -57,6 +58,18 @@ export function useExcluirConteudo(options?: UseMutationOptions<void, unknown, n
 
   return useMutation({
     mutationFn: excluirConteudo,
+    ...options,
+    onSuccess: (...args) => {
+      queryClient.invalidateQueries({ queryKey: conteudosKeys.all });
+      options?.onSuccess?.(...args);
+    },
+  });
+}
+
+export function usePublicarConteudoNoInstagram(options?: UseMutationOptions<ConteudoPortal, unknown, number>) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: publicarConteudoNoInstagram,
     ...options,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({ queryKey: conteudosKeys.all });
