@@ -141,6 +141,8 @@ export type ConteudoPortal = {
   conteudo: string;
   imagemCapa?: string | null;
   imagemCapaAlt?: string | null;
+  imagemSecundaria?: string | null;
+  imagemSecundariaAlt?: string | null;
   autorNome?: string | null;
   revisadoPor?: string | null;
   fontesOficiais?: Array<{ nome: string; url: string }>;

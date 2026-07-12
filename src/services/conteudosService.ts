@@ -8,6 +8,8 @@ export type ConteudoPayload = {
   conteudo: string;
   imagemCapa?: string;
   imagemCapaAlt?: string;
+  imagemSecundaria?: string;
+  imagemSecundariaAlt?: string;
   autorNome?: string;
   revisadoPor?: string;
   fontesOficiais?: Array<{ nome: string; url: string }>;

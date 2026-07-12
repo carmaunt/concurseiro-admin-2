@@ -61,6 +61,8 @@ const emptyForm: ConteudoPayload = {
   conteudo: '',
   imagemCapa: '',
   imagemCapaAlt: '',
+  imagemSecundaria: '',
+  imagemSecundariaAlt: '',
   autorNome: 'O Concurseiro',
   revisadoPor: '',
   fontesOficiais: [],
@@ -89,6 +91,8 @@ function toPayload(conteudo: ConteudoPortal): ConteudoPayload {
     conteudo: conteudo.conteudo,
     imagemCapa: conteudo.imagemCapa ?? '',
     imagemCapaAlt: conteudo.imagemCapaAlt ?? '',
+    imagemSecundaria: conteudo.imagemSecundaria ?? '',
+    imagemSecundariaAlt: conteudo.imagemSecundariaAlt ?? '',
     autorNome: conteudo.autorNome ?? 'O Concurseiro',
     revisadoPor: conteudo.revisadoPor ?? '',
     fontesOficiais: conteudo.fontesOficiais ?? [],
@@ -112,6 +116,7 @@ export default function ConteudosPage() {
   const [editing, setEditing] = useState<ConteudoPortal | null>(null);
   const [form, setForm] = useState<ConteudoPayload>(emptyForm);
   const [imagemArquivo, setImagemArquivo] = useState<File | null>(null);
+  const [imagemSecundariaArquivo, setImagemSecundariaArquivo] = useState<File | null>(null);
   const [enviandoImagem, setEnviandoImagem] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -126,6 +131,7 @@ export default function ConteudosPage() {
       setEditing(null);
       setForm(emptyForm);
       setImagemArquivo(null);
+      setImagemSecundariaArquivo(null);
       setFeedback({ type: 'success', message: 'Conteúdo salvo com sucesso.' });
     },
     onError: (error) => setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Não foi possível salvar o conteúdo.') }),
@@ -160,6 +166,7 @@ export default function ConteudosPage() {
     setEditing(null);
     setForm(emptyForm);
     setImagemArquivo(null);
+    setImagemSecundariaArquivo(null);
     setDialogOpen(true);
   }
 
@@ -167,15 +174,17 @@ export default function ConteudosPage() {
     setEditing(conteudo);
     setForm(toPayload(conteudo));
     setImagemArquivo(null);
+    setImagemSecundariaArquivo(null);
     setDialogOpen(true);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
-      setEnviandoImagem(Boolean(imagemArquivo));
+      setEnviandoImagem(Boolean(imagemArquivo || imagemSecundariaArquivo));
       const imagemCapa = imagemArquivo ? (await enviarImagemCapa(imagemArquivo)).url : form.imagemCapa;
-      salvar.mutate({ id: editing?.id, payload: { ...form, imagemCapa } });
+      const imagemSecundaria = imagemSecundariaArquivo ? (await enviarImagemCapa(imagemSecundariaArquivo)).url : form.imagemSecundaria;
+      salvar.mutate({ id: editing?.id, payload: { ...form, imagemCapa, imagemSecundaria } });
     } catch (error) {
       setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Não foi possível enviar a imagem de capa.') });
     } finally {
@@ -425,6 +434,15 @@ export default function ConteudosPage() {
                 ) : null}
               </Stack>
               <TextField label="Texto alternativo da capa" helperText="Descreva a imagem para leitores e mecanismos de busca." value={form.imagemCapaAlt ?? ''} onChange={(event) => setForm((current) => ({ ...current, imagemCapaAlt: event.target.value }))} />
+              {form.tipo === 'BLOG' ? <Stack spacing={1.25}>
+                <Typography fontWeight={700}>Imagem complementar do artigo</Typography>
+                <Button component="label" variant="outlined" startIcon={<UploadFileOutlinedIcon />} disabled={enviandoImagem || salvar.isPending} sx={{ textTransform: 'none', alignSelf: 'flex-start' }}>
+                  {imagemSecundariaArquivo ? 'Trocar imagem complementar' : 'Selecionar imagem complementar'}
+                  <input hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setImagemSecundariaArquivo(event.target.files?.[0] ?? null)} />
+                </Button>
+                {imagemSecundariaArquivo ? <Typography variant="body2" color="text.secondary">{imagemSecundariaArquivo.name}</Typography> : null}
+                <TextField label="Texto alternativo da imagem complementar" value={form.imagemSecundariaAlt ?? ''} onChange={(event) => setForm((current) => ({ ...current, imagemSecundariaAlt: event.target.value }))} />
+              </Stack> : null}
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField label="Autor" fullWidth value={form.autorNome ?? ''} onChange={(event) => setForm((current) => ({ ...current, autorNome: event.target.value }))} />
                 <TextField label="Revisado por" fullWidth value={form.revisadoPor ?? ''} onChange={(event) => setForm((current) => ({ ...current, revisadoPor: event.target.value }))} />
