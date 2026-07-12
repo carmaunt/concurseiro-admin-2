@@ -140,6 +140,10 @@ export type ConteudoPortal = {
   resumo: string;
   conteudo: string;
   imagemCapa?: string | null;
+  imagemCapaAlt?: string | null;
+  autorNome?: string | null;
+  revisadoPor?: string | null;
+  fontesOficiais?: Array<{ nome: string; url: string }>;
   categoria?: string | null;
   category?: TaxonomiaResumo | null;
   tags: TaxonomiaResumo[];

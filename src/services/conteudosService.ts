@@ -7,6 +7,10 @@ export type ConteudoPayload = {
   resumo: string;
   conteudo: string;
   imagemCapa?: string;
+  imagemCapaAlt?: string;
+  autorNome?: string;
+  revisadoPor?: string;
+  fontesOficiais?: Array<{ nome: string; url: string }>;
   categoriaId?: number | null;
   tagIds?: number[];
   status: ConteudoStatus;

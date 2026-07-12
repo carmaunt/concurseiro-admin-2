@@ -60,6 +60,10 @@ const emptyForm: ConteudoPayload = {
   resumo: '',
   conteudo: '',
   imagemCapa: '',
+  imagemCapaAlt: '',
+  autorNome: 'O Concurseiro',
+  revisadoPor: '',
+  fontesOficiais: [],
   categoriaId: null,
   tagIds: [],
   status: 'RASCUNHO',
@@ -84,6 +88,10 @@ function toPayload(conteudo: ConteudoPortal): ConteudoPayload {
     resumo: conteudo.resumo,
     conteudo: conteudo.conteudo,
     imagemCapa: conteudo.imagemCapa ?? '',
+    imagemCapaAlt: conteudo.imagemCapaAlt ?? '',
+    autorNome: conteudo.autorNome ?? 'O Concurseiro',
+    revisadoPor: conteudo.revisadoPor ?? '',
+    fontesOficiais: conteudo.fontesOficiais ?? [],
     categoriaId: conteudo.category?.id ?? null,
     tagIds: conteudo.tags.map((tag) => tag.id),
     status: conteudo.status,
@@ -415,6 +423,23 @@ export default function ConteudosPage() {
                     </Typography>
                   </Stack>
                 ) : null}
+              </Stack>
+              <TextField label="Texto alternativo da capa" helperText="Descreva a imagem para leitores e mecanismos de busca." value={form.imagemCapaAlt ?? ''} onChange={(event) => setForm((current) => ({ ...current, imagemCapaAlt: event.target.value }))} />
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                <TextField label="Autor" fullWidth value={form.autorNome ?? ''} onChange={(event) => setForm((current) => ({ ...current, autorNome: event.target.value }))} />
+                <TextField label="Revisado por" fullWidth value={form.revisadoPor ?? ''} onChange={(event) => setForm((current) => ({ ...current, revisadoPor: event.target.value }))} />
+              </Stack>
+              <Stack spacing={1}>
+                <Typography fontWeight={700}>Fontes oficiais</Typography>
+                <Typography variant="body2" color="text.secondary">Adicione as fontes usadas; elas aparecerão no artigo e nos dados estruturados.</Typography>
+                {(form.fontesOficiais ?? []).map((fonte, index) => (
+                  <Stack key={`${fonte.url}-${index}`} direction={{ xs: 'column', md: 'row' }} spacing={1}>
+                    <TextField label="Nome da fonte" fullWidth value={fonte.nome} onChange={(event) => setForm((current) => ({ ...current, fontesOficiais: (current.fontesOficiais ?? []).map((item, itemIndex) => itemIndex === index ? { ...item, nome: event.target.value } : item) }))} />
+                    <TextField label="URL oficial" type="url" fullWidth value={fonte.url} onChange={(event) => setForm((current) => ({ ...current, fontesOficiais: (current.fontesOficiais ?? []).map((item, itemIndex) => itemIndex === index ? { ...item, url: event.target.value } : item) }))} />
+                    <Button color="error" onClick={() => setForm((current) => ({ ...current, fontesOficiais: (current.fontesOficiais ?? []).filter((_, itemIndex) => itemIndex !== index) }))} sx={{ textTransform: 'none' }}>Remover</Button>
+                  </Stack>
+                ))}
+                <Button type="button" variant="outlined" onClick={() => setForm((current) => ({ ...current, fontesOficiais: [...(current.fontesOficiais ?? []), { nome: '', url: '' }] }))} sx={{ alignSelf: 'flex-start', textTransform: 'none' }}>Adicionar fonte</Button>
               </Stack>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField label="Título SEO" fullWidth value={form.seoTitulo ?? ''} onChange={(event) => setForm((current) => ({ ...current, seoTitulo: event.target.value }))} />
