@@ -10,6 +10,8 @@ export type ConteudoPayload = {
   imagemCapaAlt?: string;
   imagemSecundaria?: string;
   imagemSecundariaAlt?: string;
+  instagramLegenda?: string;
+  instagramHashtags?: string;
   autorNome?: string;
   revisadoPor?: string;
   fontesOficiais?: Array<{ nome: string; url: string }>;

@@ -143,6 +143,8 @@ export type ConteudoPortal = {
   imagemCapaAlt?: string | null;
   imagemSecundaria?: string | null;
   imagemSecundariaAlt?: string | null;
+  instagramLegenda?: string | null;
+  instagramHashtags?: string | null;
   autorNome?: string | null;
   revisadoPor?: string | null;
   fontesOficiais?: Array<{ nome: string; url: string }>;

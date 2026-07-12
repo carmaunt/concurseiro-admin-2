@@ -41,6 +41,7 @@ import PublishOutlinedIcon from '@mui/icons-material/PublishOutlined';
 import UnpublishedOutlinedIcon from '@mui/icons-material/UnpublishedOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import { getApiErrorMessage } from '@/services/api';
 import type { ConteudoPortal, ConteudoStatus, ConteudoTipo } from '@/types/api';
 import { useAlterarStatusConteudo, useConteudos, useExcluirConteudo, useSalvarConteudo } from '@/hooks/useConteudos';
@@ -63,6 +64,8 @@ const emptyForm: ConteudoPayload = {
   imagemCapaAlt: '',
   imagemSecundaria: '',
   imagemSecundariaAlt: '',
+  instagramLegenda: '',
+  instagramHashtags: '',
   autorNome: 'O Concurseiro',
   revisadoPor: '',
   fontesOficiais: [],
@@ -83,6 +86,32 @@ function statusColor(status: ConteudoStatus) {
   return status === 'PUBLICADO' ? 'success' : 'default';
 }
 
+function portalPath(tipo: ConteudoTipo) {
+  return {
+    NOTICIA: '/noticias',
+    BLOG: '/blog',
+    CONCURSO_ABERTO: '/concursos-abertos',
+    EDITAL_PREVISTO: '/editais-previstos',
+  }[tipo];
+}
+
+function formatarHashtags(value?: string) {
+  return (value ?? '')
+    .split(/[\s,]+/)
+    .map((item) => item.trim().replace(/^#/, ''))
+    .filter(Boolean)
+    .map((item) => `#${item}`)
+    .join(' ');
+}
+
+function montarLegendaInstagram(form: ConteudoPayload) {
+  const corpo = form.instagramLegenda?.trim() || form.resumo.trim();
+  const link = form.slug?.trim() ? `Leia no portal: https://appoconcurseiro.com.br${portalPath(form.tipo)}/${form.slug.trim()}` : '';
+  const hashtags = formatarHashtags(form.instagramHashtags);
+
+  return [form.titulo.trim(), corpo, link, hashtags].filter(Boolean).join('\n\n');
+}
+
 function toPayload(conteudo: ConteudoPortal): ConteudoPayload {
   return {
     titulo: conteudo.titulo,
@@ -93,6 +122,8 @@ function toPayload(conteudo: ConteudoPortal): ConteudoPayload {
     imagemCapaAlt: conteudo.imagemCapaAlt ?? '',
     imagemSecundaria: conteudo.imagemSecundaria ?? '',
     imagemSecundariaAlt: conteudo.imagemSecundariaAlt ?? '',
+    instagramLegenda: conteudo.instagramLegenda ?? '',
+    instagramHashtags: conteudo.instagramHashtags ?? '',
     autorNome: conteudo.autorNome ?? 'O Concurseiro',
     revisadoPor: conteudo.revisadoPor ?? '',
     fontesOficiais: conteudo.fontesOficiais ?? [],
@@ -161,6 +192,7 @@ export default function ConteudosPage() {
     });
     return tags;
   }, [tagsQuery.data, editing]);
+  const legendaInstagram = useMemo(() => montarLegendaInstagram(form), [form]);
 
   function abrirNovo() {
     setEditing(null);
@@ -189,6 +221,17 @@ export default function ConteudosPage() {
       setFeedback({ type: 'error', message: getApiErrorMessage(error, 'Não foi possível enviar a imagem de capa.') });
     } finally {
       setEnviandoImagem(false);
+    }
+  }
+
+  async function copiarLegendaInstagram() {
+    if (!legendaInstagram) return;
+
+    try {
+      await navigator.clipboard.writeText(legendaInstagram);
+      setFeedback({ type: 'success', message: 'Legenda copiada. Use a imagem de capa deste conteúdo no Instagram.' });
+    } catch {
+      setFeedback({ type: 'error', message: 'Não foi possível copiar a legenda. Selecione o texto e copie manualmente.' });
     }
   }
 
@@ -443,6 +486,33 @@ export default function ConteudosPage() {
                 {imagemSecundariaArquivo ? <Typography variant="body2" color="text.secondary">{imagemSecundariaArquivo.name}</Typography> : null}
                 <TextField label="Texto alternativo da imagem complementar" value={form.imagemSecundariaAlt ?? ''} onChange={(event) => setForm((current) => ({ ...current, imagemSecundariaAlt: event.target.value }))} />
               </Stack> : null}
+              <Stack spacing={1.25} sx={{ p: 2, border: '1px solid #e8edf3', borderRadius: 2, bgcolor: '#fafbfc' }}>
+                <Typography fontWeight={700}>Publicação no Instagram</Typography>
+                <Typography variant="body2" color="text.secondary">A capa já enviada pode ser reutilizada como imagem. Salve estes campos junto ao conteúdo e copie a legenda pronta quando for publicar.</Typography>
+                <TextField
+                  label="Legenda do Instagram"
+                  helperText="Opcional. Se ficar vazia, o resumo será usado na legenda pronta."
+                  multiline
+                  minRows={4}
+                  inputProps={{ maxLength: 2200 }}
+                  value={form.instagramLegenda ?? ''}
+                  onChange={(event) => setForm((current) => ({ ...current, instagramLegenda: event.target.value }))}
+                />
+                <TextField
+                  label="Hashtags"
+                  helperText="Separe por espaço ou vírgula; o painel adiciona # automaticamente ao copiar."
+                  inputProps={{ maxLength: 1000 }}
+                  value={form.instagramHashtags ?? ''}
+                  onChange={(event) => setForm((current) => ({ ...current, instagramHashtags: event.target.value }))}
+                />
+                <TextField label="Prévia da legenda" multiline minRows={5} value={legendaInstagram} InputProps={{ readOnly: true }} />
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+                  <Button type="button" variant="outlined" startIcon={<ContentCopyOutlinedIcon />} onClick={copiarLegendaInstagram} disabled={!legendaInstagram} sx={{ textTransform: 'none', alignSelf: { xs: 'stretch', sm: 'flex-start' } }}>
+                    Copiar legenda pronta
+                  </Button>
+                  {form.imagemCapa ? <Button type="button" component="a" href={form.imagemCapa} target="_blank" rel="noreferrer" variant="text" sx={{ textTransform: 'none' }}>Abrir imagem de capa</Button> : null}
+                </Stack>
+              </Stack>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField label="Autor" fullWidth value={form.autorNome ?? ''} onChange={(event) => setForm((current) => ({ ...current, autorNome: event.target.value }))} />
                 <TextField label="Revisado por" fullWidth value={form.revisadoPor ?? ''} onChange={(event) => setForm((current) => ({ ...current, revisadoPor: event.target.value }))} />
