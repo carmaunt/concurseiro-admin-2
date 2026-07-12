@@ -1,4 +1,5 @@
 import { api } from '@/services/api';
+import axios from 'axios';
 import { parseUserRole } from '@/services/auth';
 import { stringProp, unwrapApiData } from '@/utils/unknown';
 
@@ -14,7 +15,15 @@ export type RegisterPayload = {
 };
 
 export async function login(payload: LoginPayload) {
-  const response = await api.post('/api/v1/auth/login', payload);
+  let response;
+  try {
+    response = await api.post('/api/v1/auth/login', payload);
+  } catch (error) {
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+    if (status && status < 500) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    response = await api.post('/api/v1/auth/login', payload);
+  }
   const data = unwrapApiData<unknown>(response.data);
 
   return {
