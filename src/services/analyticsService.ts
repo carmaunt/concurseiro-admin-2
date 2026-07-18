@@ -5,6 +5,15 @@ export type AnalyticsRankingItem = { id: number | null; label: string; total: nu
 export type AnalyticsDashboard = {
   from: string; to: string; onlineWindowMinutes: number;
   overview: { activeToday:number; activePeriod:number; realActive:number; onlineNow:number; sessions:number; averageSessionSeconds:number; questionsToday:number; questionsPeriod:number; averageAccuracy:number; devices:number; identifiedUsers:number };
+  acquisitionFunnel: {
+    portalVisitors:number; storeClicks:number; attributedInstalls:number; activatedUsers:number;
+    eligibleForRetentionDay7:number; retainedDay7:number;
+    portalToStoreRate:number; storeToInstallRate:number; installToActivationRate:number;
+    portalToActivationRate:number; retentionDay7Rate:number;
+    totalInstallEvents:number; linkedInstallEvents:number; attributionCoverageRate:number;
+    status:'MEDINDO'|'SEM_DADOS'|'ATRIBUICAO_PARCIAL';
+    activationDefinition:string; retentionDefinition:string;
+  };
   activation: { newIdentities:number; appOpened:number; firstQuestionViewed:number; firstQuestionAnswered:number; activationRate:number; averageMinutesToFirstAnswer:number };
   engagement: { questionsPerActive:number; sessionsPerActive:number; identitiesWith10Questions:number; identitiesWith50Questions:number; engagedLast7Days:number; inactiveUsers:number };
   retention: { day1:number; day7:number; day30:number; method:string };
