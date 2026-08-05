@@ -14,6 +14,19 @@ export type AnalyticsDashboard = {
     status:'MEDINDO'|'SEM_DADOS'|'ATRIBUICAO_PARCIAL';
     activationDefinition:string; retentionDefinition:string;
   };
+  webConversionFunnel?: {
+    portalVisitors:number; sampleStarted:number; sampleCompleted:number;
+    signupStarted:number; signupCompleted:number;
+    portalToSampleRate:number; sampleCompletionRate:number;
+    portalToSignupRate:number; signupCompletionRate:number;
+    status:'MEDINDO'|'SEM_DADOS'; definition:string;
+  };
+  habitFunnel?: {
+    onboardingStarted:number; studyPlansCreated:number; onboardingCompleted:number;
+    firstQuestionAnswered:number; dailyMissionsCompleted:number;
+    onboardingCompletionRate:number; onboardingToFirstAnswerRate:number;
+    activationToMissionRate:number; activationDefinition:string;
+  };
   activation: { newIdentities:number; appOpened:number; firstQuestionViewed:number; firstQuestionAnswered:number; activationRate:number; averageMinutesToFirstAnswer:number };
   engagement: { questionsPerActive:number; sessionsPerActive:number; identitiesWith10Questions:number; identitiesWith50Questions:number; engagedLast7Days:number; inactiveUsers:number };
   retention: { day1:number; day7:number; day30:number; method:string };

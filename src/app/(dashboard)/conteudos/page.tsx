@@ -42,6 +42,8 @@ import UnpublishedOutlinedIcon from '@mui/icons-material/UnpublishedOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
 import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
+import SeoChecklist from '@/components/conteudos/SeoChecklist';
+import { evaluateSeoDraft, type ImageDimensions } from '@/components/conteudos/seoChecks';
 import { getApiErrorMessage } from '@/services/api';
 import type { ConteudoPortal, ConteudoStatus, ConteudoTipo } from '@/types/api';
 import { useAlterarStatusConteudo, useConteudos, useExcluirConteudo, usePublicarConteudoNoInstagram, useSalvarConteudo } from '@/hooks/useConteudos';
@@ -137,6 +139,15 @@ function toPayload(conteudo: ConteudoPortal): ConteudoPayload {
   };
 }
 
+async function readImageDimensions(file: File): Promise<ImageDimensions> {
+  const bitmap = await createImageBitmap(file);
+  try {
+    return { width: bitmap.width, height: bitmap.height };
+  } finally {
+    bitmap.close();
+  }
+}
+
 export default function ConteudosPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -147,6 +158,7 @@ export default function ConteudosPage() {
   const [editing, setEditing] = useState<ConteudoPortal | null>(null);
   const [form, setForm] = useState<ConteudoPayload>(emptyForm);
   const [imagemArquivo, setImagemArquivo] = useState<File | null>(null);
+  const [imagemCapaDimensoes, setImagemCapaDimensoes] = useState<ImageDimensions | null>(null);
   const [imagemSecundariaArquivo, setImagemSecundariaArquivo] = useState<File | null>(null);
   const [enviandoImagem, setEnviandoImagem] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -162,6 +174,7 @@ export default function ConteudosPage() {
       setEditing(null);
       setForm(emptyForm);
       setImagemArquivo(null);
+      setImagemCapaDimensoes(null);
       setImagemSecundariaArquivo(null);
       setFeedback({ type: 'success', message: 'Conteúdo salvo com sucesso.' });
     },
@@ -206,6 +219,7 @@ export default function ConteudosPage() {
     setEditing(null);
     setForm(emptyForm);
     setImagemArquivo(null);
+    setImagemCapaDimensoes(null);
     setImagemSecundariaArquivo(null);
     setDialogOpen(true);
   }
@@ -214,6 +228,7 @@ export default function ConteudosPage() {
     setEditing(conteudo);
     setForm(toPayload(conteudo));
     setImagemArquivo(null);
+    setImagemCapaDimensoes(null);
     setImagemSecundariaArquivo(null);
     setDialogOpen(true);
   }
@@ -221,6 +236,23 @@ export default function ConteudosPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     try {
+      const coverDimensions = imagemArquivo
+        ? imagemCapaDimensoes ?? await readImageDimensions(imagemArquivo)
+        : null;
+      if (imagemArquivo && !imagemCapaDimensoes) setImagemCapaDimensoes(coverDimensions);
+
+      const seoReport = evaluateSeoDraft(form, {
+        hasSelectedCover: Boolean(imagemArquivo),
+        coverDimensions,
+      });
+      if (form.status === 'PUBLICADO' && seoReport.blockingIssues.length > 0) {
+        setFeedback({
+          type: 'error',
+          message: `Revise as ${seoReport.blockingIssues.length} pendência(s) essencial(is) de SEO antes de publicar. O conteúdo pode ser salvo como rascunho.`,
+        });
+        return;
+      }
+
       setEnviandoImagem(Boolean(imagemArquivo || imagemSecundariaArquivo));
       const imagemCapa = imagemArquivo ? (await enviarImagemCapa(imagemArquivo)).url : form.imagemCapa;
       const imagemSecundaria = imagemSecundariaArquivo ? (await enviarImagemCapa(imagemSecundariaArquivo)).url : form.imagemSecundaria;
@@ -230,6 +262,37 @@ export default function ConteudosPage() {
     } finally {
       setEnviandoImagem(false);
     }
+  }
+
+  async function selecionarImagemCapa(file: File | null) {
+    setImagemArquivo(file);
+    setImagemCapaDimensoes(null);
+    if (!file) return;
+
+    try {
+      setImagemCapaDimensoes(await readImageDimensions(file));
+    } catch {
+      setFeedback({ type: 'error', message: 'Não foi possível verificar as dimensões da imagem selecionada.' });
+    }
+  }
+
+  function alternarPublicacao(item: ConteudoPortal) {
+    if (item.status === 'PUBLICADO') {
+      alterarStatus.mutate({ id: item.id, status: 'RASCUNHO' });
+      return;
+    }
+
+    const report = evaluateSeoDraft(toPayload(item));
+    if (report.blockingIssues.length > 0) {
+      abrirEdicao(item);
+      setFeedback({
+        type: 'error',
+        message: `Este rascunho possui ${report.blockingIssues.length} pendência(s) essencial(is). O editor foi aberto para revisão.`,
+      });
+      return;
+    }
+
+    alterarStatus.mutate({ id: item.id, status: 'PUBLICADO' });
   }
 
   async function copiarLegendaInstagram() {
@@ -371,7 +434,7 @@ export default function ConteudosPage() {
                       <Tooltip title={item.status === 'PUBLICADO' ? 'Despublicar' : 'Publicar'}>
                         <IconButton
                           color="primary"
-                          onClick={() => alterarStatus.mutate({ id: item.id, status: item.status === 'PUBLICADO' ? 'RASCUNHO' : 'PUBLICADO' })}
+                          onClick={() => alternarPublicacao(item)}
                         >
                           {item.status === 'PUBLICADO' ? <UnpublishedOutlinedIcon /> : <PublishOutlinedIcon />}
                         </IconButton>
@@ -465,11 +528,12 @@ export default function ConteudosPage() {
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ sm: 'center' }}>
                   <Button component="label" variant="outlined" startIcon={<UploadFileOutlinedIcon />} disabled={enviandoImagem || salvar.isPending} sx={{ textTransform: 'none', alignSelf: { xs: 'stretch', sm: 'auto' } }}>
                     {imagemArquivo ? 'Trocar imagem' : 'Selecionar imagem'}
-                    <input hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setImagemArquivo(event.target.files?.[0] ?? null)} />
+                    <input hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => void selecionarImagemCapa(event.target.files?.[0] ?? null)} />
                   </Button>
                   {imagemArquivo ? (
                     <Typography variant="body2" color="text.secondary">
                       {imagemArquivo.name} · {(imagemArquivo.size / 1024 / 1024).toFixed(2)} MB
+                      {imagemCapaDimensoes ? ` · ${imagemCapaDimensoes.width} × ${imagemCapaDimensoes.height} px` : ''}
                     </Typography>
                   ) : (
                     <Typography variant="body2" color="text.secondary">PNG, JPEG ou WebP de até 5 MB.</Typography>
@@ -549,9 +613,29 @@ export default function ConteudosPage() {
                 <Button type="button" variant="outlined" onClick={() => setForm((current) => ({ ...current, fontesOficiais: [...(current.fontesOficiais ?? []), { nome: '', url: '' }] }))} sx={{ alignSelf: 'flex-start', textTransform: 'none' }}>Adicionar fonte</Button>
               </Stack>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                <TextField label="Título SEO" fullWidth value={form.seoTitulo ?? ''} onChange={(event) => setForm((current) => ({ ...current, seoTitulo: event.target.value }))} />
-                <TextField label="Descrição SEO" fullWidth value={form.seoDescricao ?? ''} onChange={(event) => setForm((current) => ({ ...current, seoDescricao: event.target.value }))} />
+                <TextField
+                  label="Título SEO"
+                  fullWidth
+                  helperText={`${(form.seoTitulo || form.titulo).trim().length} caracteres considerando o fallback; recomendado entre 30 e 60.`}
+                  inputProps={{ maxLength: 180 }}
+                  value={form.seoTitulo ?? ''}
+                  onChange={(event) => setForm((current) => ({ ...current, seoTitulo: event.target.value }))}
+                />
+                <TextField
+                  label="Descrição SEO"
+                  fullWidth
+                  helperText={`${(form.seoDescricao || form.resumo).trim().length} caracteres considerando o fallback; recomendado entre 120 e 160.`}
+                  inputProps={{ maxLength: 300 }}
+                  value={form.seoDescricao ?? ''}
+                  onChange={(event) => setForm((current) => ({ ...current, seoDescricao: event.target.value }))}
+                />
               </Stack>
+
+              <SeoChecklist
+                form={form}
+                hasSelectedCover={Boolean(imagemArquivo)}
+                coverDimensions={imagemCapaDimensoes}
+              />
 
               <FormControlLabel
                 control={<Switch checked={form.destaque} onChange={(event) => setForm((current) => ({ ...current, destaque: event.target.checked }))} />}
